@@ -18,7 +18,7 @@ test("package declares Pi skill and extension resources", () => {
 });
 
 test("package limits distributed files to runtime resources", () => {
-  assert.deepEqual(pkg.files, [".pi/extensions/", "skills/"]);
+  assert.deepEqual(pkg.files, [".pi/extensions/", "runtime/", "skills/"]);
 });
 
 test("packed package excludes development-only paths", () => {
@@ -37,6 +37,14 @@ test("packed package excludes development-only paths", () => {
 
   assert.equal(result.status, 0, result.stderr || result.error?.message);
   const packedPaths = JSON.parse(result.stdout)[0].files.map(({ path }) => path);
+  for (const required of [
+    ".pi/extensions/red-light-green-light.ts",
+    "runtime/command-policy.js",
+    "runtime/planning-paths.js",
+    "runtime/protocol.js",
+    "skills/red-light-green-light/SKILL.md",
+    "skills/red-light-green-light/references/enforcement.md",
+  ]) assert.ok(packedPaths.includes(required), required);
 
   for (const path of packedPaths) {
     assert.equal(

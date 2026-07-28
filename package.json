@@ -21,6 +21,7 @@
   },
   "files": [
     ".pi/extensions/",
+    "runtime/",
     "skills/"
   ],
   "peerDependencies": {
