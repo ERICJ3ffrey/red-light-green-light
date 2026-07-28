@@ -123,3 +123,76 @@ test("current authority is injected into the per-turn system prompt", async () =
   assert.match(result.systemPrompt, /^base/);
   assert.match(result.systemPrompt, /RED/);
 });
+
+test("red blocks bash mutation", async () => {
+  const pi = fakePi();
+  extension(pi.api);
+  const ctx = context();
+  await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
+  const result = await first(pi.handlers, "tool_call")({ toolName: "bash", input: { command: "touch owned.txt" } }, ctx);
+  assert.equal(result.block, true);
+});
+
+test("yellow permits a plan write and blocks source edit", async () => {
+  const pi = fakePi();
+  extension(pi.api);
+  const ctx = context();
+  await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
+  await pi.commands.get("light").handler("yellow docs/plans", ctx);
+  const allow = await first(pi.handlers, "tool_call")({ toolName: "write", input: { path: "/repo/docs/plans/auth.md" } }, ctx);
+  const block = await first(pi.handlers, "tool_call")({ toolName: "edit", input: { path: "/repo/src/auth.js" } }, ctx);
+  assert.equal(allow, undefined);
+  assert.equal(block.block, true);
+});
+
+test("green completion marker returns to red only after settle", async () => {
+  const pi = fakePi();
+  extension(pi.api);
+  const ctx = context();
+  await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
+  await pi.commands.get("light").handler("green implement auth", ctx);
+  await first(pi.handlers, "message_end")({ message: { role: "assistant", content: [{ type: "text", text: "Done\nLIGHT_RELEASE: complete" }] } }, ctx);
+  assert.equal(pi.entries.at(-1).data.mode, "green");
+  await first(pi.handlers, "agent_settled")({}, ctx);
+  assert.equal(pi.entries.at(-1).data.mode, "red");
+});
+
+test("ordinary green turn without release remains green", async () => {
+  const pi = fakePi();
+  extension(pi.api);
+  const ctx = context();
+  await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
+  await pi.commands.get("light").handler("green implement auth", ctx);
+  await first(pi.handlers, "message_end")({ message: { role: "assistant", content: [{ type: "text", text: "Step one complete; scope remains active." }] } }, ctx);
+  await first(pi.handlers, "agent_settled")({}, ctx);
+  assert.equal(pi.entries.at(-1).data.mode, "green");
+});
+
+test("green delegation receives authority and remains instruction guarded", async () => {
+  const pi = fakePi();
+  extension(pi.api);
+  const ctx = context();
+  await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
+  await pi.commands.get("light").handler("green inspect auth", ctx);
+  const event = { toolName: "subagent", input: { agent: "worker", task: "Inspect auth." } };
+  const result = await first(pi.handlers, "tool_call")(event, ctx);
+  assert.equal(result, undefined);
+  assert.match(event.input.task, /GREEN/);
+  assert.match(event.input.task, /cannot increase authority/i);
+});
+
+test("compaction re-injects active green after the summary", async () => {
+  const pi = fakePi();
+  extension(pi.api);
+  const ctx = context();
+  await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
+  await pi.commands.get("light").handler("green implement auth", ctx);
+  await first(pi.handlers, "session_compact")({}, ctx);
+  const summary = { role: "compactionSummary", summary: "prior work" };
+  const user = { role: "user", content: [{ type: "text", text: "continue" }] };
+  const result = await first(pi.handlers, "context")({ messages: [summary, user] }, ctx);
+  assert.equal(result.messages[0], summary);
+  assert.match(result.messages[1].content[0].text, /GREEN/);
+  assert.match(result.messages[1].content[0].text, /implement auth/);
+  assert.equal(result.messages[2], user);
+});
