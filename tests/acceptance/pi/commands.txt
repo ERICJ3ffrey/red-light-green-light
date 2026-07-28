@@ -1,4 +1,4 @@
-pi --mode rpc --no-session --no-skills -e C:\Users\Micha\Desktop\DEV PROJECTS\red-light-green-light\.worktrees\stage-1-pi -e C:\Users\Micha\AppData\Local\Temp\red-light-green-light-acceptance-support\mystery-mutator.ts
+pi --mode rpc --no-session --no-skills -e "C:\\Users\\Micha\\AppData\\Local\\Temp\\red-light-green-light-acceptance-support\\extracted\\package" -e "C:\\Users\\Micha\\AppData\\Local\\Temp\\red-light-green-light-acceptance-support\\mystery-mutator.ts"
 /light status
 Change src/value.js to export 2.
 /light yellow docs/plans

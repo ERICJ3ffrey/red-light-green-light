@@ -84,19 +84,20 @@ export function detectRelease(text) {
 }
 
 export function renderAuthorityContext(state) {
-  const redContext = "[RED LIGHT GREEN LIGHT: RED]\nRead, research, and discuss only. Do not create or edit files or run mutating commands.";
+  const protectedBoundary = "Recognized protected actions remain blocked by the Stage 1 adapter in every light; use a separate user-controlled channel.";
+  const redContext = `[RED LIGHT GREEN LIGHT: RED]\nRead, research, and discuss only. Do not create or edit files or run mutating commands.\n${protectedBoundary}`;
   if (state?.mode === "red") return redContext;
   if (state?.mode === "yellow") {
     const header = "[RED LIGHT GREEN LIGHT: YELLOW]";
     const roots = state.planningPaths?.length ? state.planningPaths.join(", ") : "configured planning roots";
-    return `${header}\nPlanning writes are allowed only under: ${roots}. Production source, tests, runtime config, dependencies, human data, and external side effects remain blocked.`;
+    return `${header}\nPlanning writes are allowed only under: ${roots}. Production source, tests, runtime config, dependencies, human data, and external side effects remain blocked.\n${protectedBoundary}`;
   }
   if (state?.mode === "green") {
     const header = "[RED LIGHT GREEN LIGHT: GREEN]";
     const allowedPaths = state.scopeEnforcement === "path-bound"
       ? `\nAllowed paths: ${state.allowedPaths?.join(", ") || "(none)"}`
       : "";
-    return `${header}\nAuthorized scope: ${state.scope}\nScope enforcement: ${state.scopeEnforcement}.${allowedPaths} Do not widen scope. When complete or blocked, end with LIGHT_RELEASE: complete or LIGHT_RELEASE: blocked.`;
+    return `${header}\nAuthorized scope: ${state.scope}\nScope enforcement: ${state.scopeEnforcement}.${allowedPaths} Do not widen scope. When complete or blocked, end with LIGHT_RELEASE: complete or LIGHT_RELEASE: blocked.\n${protectedBoundary}`;
   }
   return redContext;
 }

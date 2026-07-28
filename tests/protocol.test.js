@@ -95,7 +95,7 @@ test("release marker must be at the end of the entire output", () => {
   assert.equal(detectRelease("Finished.\nLIGHT_RELEASE: complete  \n\t"), "complete");
 });
 
-test("authority context repeats mode and scope", () => {
+test("authority context repeats mode, scope, and protected-action boundary", () => {
   const text = renderAuthorityContext({
     mode: "green",
     scope: "implement auth plan",
@@ -104,6 +104,8 @@ test("authority context repeats mode and scope", () => {
   assert.match(text, /GREEN/);
   assert.match(text, /implement auth plan/);
   assert.match(text, /LIGHT_RELEASE/);
+  assert.match(text, /protected actions remain blocked/i);
+  assert.match(renderAuthorityContext({ mode: "red" }), /separate user-controlled channel/i);
 });
 
 test("unknown authority modes fail closed to red", () => {
