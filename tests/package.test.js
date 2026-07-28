@@ -85,3 +85,15 @@ test("skill validation rejects frontmatter after leading prose", () => {
 
   assert.ok(errors.includes("SKILL.md missing bounded frontmatter"));
 });
+
+test("README documents Pi install, commands, and enforcement limits", () => {
+  const text = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+  assert.match(text, /pi install git:github\.com\/ERICJ3ffrey\/red-light-green-light/);
+  assert.match(text, /\/light yellow \[planning-path\]/);
+  assert.match(text, /--paths path-one,path-two/);
+  assert.match(text, /Path-bound Green/);
+  assert.match(text, /Semantic Green/);
+  assert.match(text, /instruction guarded/i);
+  assert.match(text, /not an OS sandbox/i);
+  assert.match(text, /concurrent external/i);
+});

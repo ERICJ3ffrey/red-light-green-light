@@ -37,6 +37,16 @@ function validatePackage() {
     errors.push("missing canonical skill: skills/red-light-green-light/SKILL.md");
   }
 
+  for (const relative of [
+    "README.md",
+    "LICENSE",
+    "runtime/protocol.js",
+    "runtime/command-policy.js",
+    "runtime/planning-paths.js",
+  ]) {
+    if (!existsSync(resolve(root, relative))) errors.push(`missing release file: ${relative}`);
+  }
+
   if (errors.length) {
     for (const error of errors) console.error(`ERROR ${error}`);
     process.exitCode = 1;
