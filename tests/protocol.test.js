@@ -1,0 +1,82 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  applyUserTransition,
+  createRedState,
+  detectRelease,
+  parseLightArgs,
+  parseTransitionMessage,
+  renderAuthorityContext,
+} from "../runtime/protocol.js";
+
+test("sessions start red", () => {
+  assert.deepEqual(createRedState("startup", "2026-07-27T00:00:00.000Z"), {
+    mode: "red",
+    resetReason: "startup",
+    grantedAt: "2026-07-27T00:00:00.000Z",
+  });
+});
+
+test("green requires a scope", () => {
+  assert.deepEqual(parseLightArgs("green"), { ok: false, error: "Green requires a scope." });
+});
+
+test("green accepts an optional path allowlist", () => {
+  assert.deepEqual(parseLightArgs("green implement auth --paths src/auth.js,tests/auth.test.js"), {
+    ok: true,
+    transition: {
+      mode: "green",
+      scope: "implement auth",
+      allowedPaths: ["src/auth.js", "tests/auth.test.js"],
+    },
+  });
+});
+
+test("yellow accepts an explicit planning path", () => {
+  assert.deepEqual(parseLightArgs("yellow docs/plans/auth.md"), {
+    ok: true,
+    transition: { mode: "yellow", planningPath: "docs/plans/auth.md" },
+  });
+});
+
+test("pure transition does not consume an agent turn", () => {
+  assert.deepEqual(parseTransitionMessage("green light for implement docs/plans/auth.md"), {
+    transition: { mode: "green", scope: "implement docs/plans/auth.md" },
+    task: "",
+  });
+});
+
+test("combined transition preserves the task after the first line", () => {
+  assert.deepEqual(parseTransitionMessage("green light for implement auth plan\nExecute the approved plan now."), {
+    transition: { mode: "green", scope: "implement auth plan" },
+    task: "Execute the approved plan now.",
+  });
+});
+
+test("user transition creates scoped green", () => {
+  const next = applyUserTransition(createRedState(), { mode: "green", scope: "implement auth plan" }, {
+    now: "2026-07-27T01:00:00.000Z",
+    userEntry: "entry-1",
+  });
+  assert.equal(next.mode, "green");
+  assert.equal(next.scope, "implement auth plan");
+  assert.equal(next.scopeEnforcement, "semantic");
+  assert.equal(next.grantedByUserEntry, "entry-1");
+});
+
+test("release markers only reduce green to red", () => {
+  assert.equal(detectRelease("Finished.\nLIGHT_RELEASE: complete"), "complete");
+  assert.equal(detectRelease("Need a decision.\nLIGHT_RELEASE: blocked"), "blocked");
+  assert.equal(detectRelease("Still implementing."), undefined);
+});
+
+test("authority context repeats mode and scope", () => {
+  const text = renderAuthorityContext({
+    mode: "green",
+    scope: "implement auth plan",
+    scopeEnforcement: "semantic",
+  });
+  assert.match(text, /GREEN/);
+  assert.match(text, /implement auth plan/);
+  assert.match(text, /LIGHT_RELEASE/);
+});

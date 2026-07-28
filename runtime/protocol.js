@@ -1,0 +1,95 @@
+const MODES = new Set(["red", "yellow", "green"]);
+const RELEASE_RE = /(?:^|\n)LIGHT_RELEASE:\s*(complete|blocked|cancelled|scope-drift)\s*$/im;
+
+export function createRedState(resetReason = "startup", now = new Date().toISOString()) {
+  return { mode: "red", resetReason, grantedAt: now };
+}
+
+export function parseLightArgs(raw) {
+  const text = String(raw || "").trim();
+  const [modeRaw = "", ...rest] = text.split(/\s+/);
+  const mode = modeRaw.toLowerCase();
+  const value = rest.join(" ").trim();
+
+  if (!MODES.has(mode) && mode !== "status") {
+    return { ok: false, error: "Use /light red, /light yellow [planning-path], /light green <scope>, or /light status." };
+  }
+  if (mode === "status") return { ok: true, status: true };
+  if (mode === "green" && !value) return { ok: false, error: "Green requires a scope." };
+  if (mode === "red") return { ok: true, transition: { mode: "red" } };
+  if (mode === "yellow") {
+    return { ok: true, transition: value ? { mode: "yellow", planningPath: value } : { mode: "yellow" } };
+  }
+  const marker = " --paths ";
+  const markerIndex = value.indexOf(marker);
+  if (markerIndex === -1) return { ok: true, transition: { mode: "green", scope: value } };
+  const scope = value.slice(0, markerIndex).trim();
+  const allowedPaths = value.slice(markerIndex + marker.length).split(",").map((item) => item.trim()).filter(Boolean);
+  if (!scope) return { ok: false, error: "Green requires a scope." };
+  if (!allowedPaths.length) return { ok: false, error: "--paths requires at least one path." };
+  return { ok: true, transition: { mode: "green", scope, allowedPaths } };
+}
+
+export function parseTransitionMessage(raw) {
+  const text = String(raw || "").replace(/\r\n/g, "\n").trim();
+  if (!text) return undefined;
+  const [firstLine, ...remaining] = text.split("\n");
+  const line = firstLine.trim();
+  let parsed;
+
+  if (/^\/light\s+/i.test(line)) {
+    parsed = parseLightArgs(line.replace(/^\/light\s+/i, ""));
+  } else if (/^red light$/i.test(line)) {
+    parsed = { ok: true, transition: { mode: "red" } };
+  } else if (/^yellow light(?:\s+(.+))?$/i.test(line)) {
+    const match = line.match(/^yellow light(?:\s+(.+))?$/i);
+    parsed = { ok: true, transition: match?.[1] ? { mode: "yellow", planningPath: match[1].trim() } : { mode: "yellow" } };
+  } else if (/^green light(?:\s+for)?\s+(.+)$/i.test(line)) {
+    const match = line.match(/^green light(?:\s+for)?\s+(.+)$/i);
+    parsed = { ok: true, transition: { mode: "green", scope: match[1].trim() } };
+  } else {
+    return undefined;
+  }
+
+  if (!parsed.ok || !parsed.transition) return undefined;
+  return { transition: parsed.transition, task: remaining.join("\n").trim() };
+}
+
+export function applyUserTransition(_current, transition, options = {}) {
+  const now = options.now || new Date().toISOString();
+  if (transition.mode === "red") return createRedState("user", now);
+  if (transition.mode === "yellow") {
+    return {
+      mode: "yellow",
+      planningPaths: transition.planningPath ? [transition.planningPath] : [],
+      grantedAt: now,
+      grantedByUserEntry: options.userEntry,
+    };
+  }
+  if (!transition.scope?.trim()) throw new Error("Green requires a scope.");
+  const allowedPaths = options.allowedPaths?.length ? options.allowedPaths : transition.allowedPaths;
+  return {
+    mode: "green",
+    scope: transition.scope.trim(),
+    scopeEnforcement: allowedPaths?.length ? "path-bound" : "semantic",
+    allowedPaths: allowedPaths?.length ? [...allowedPaths] : undefined,
+    grantedAt: now,
+    grantedByUserEntry: options.userEntry,
+  };
+}
+
+export function detectRelease(text) {
+  return String(text || "").match(RELEASE_RE)?.[1];
+}
+
+export function renderAuthorityContext(state) {
+  const header = `[RED LIGHT GREEN LIGHT: ${state.mode.toUpperCase()}]`;
+  if (state.mode === "red") {
+    return `${header}\nRead, research, and discuss only. Do not create or edit files or run mutating commands.`;
+  }
+  if (state.mode === "yellow") {
+    const roots = state.planningPaths?.length ? state.planningPaths.join(", ") : "configured planning roots";
+    return `${header}\nPlanning writes are allowed only under: ${roots}. Production source, tests, runtime config, dependencies, human data, and external side effects remain blocked.`;
+  }
+  return `${header}\nAuthorized scope: ${state.scope}\nScope enforcement: ${state.scopeEnforcement}. Do not widen scope. When complete or blocked, end with LIGHT_RELEASE: complete or LIGHT_RELEASE: blocked.`;
+}
