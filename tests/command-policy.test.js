@@ -116,6 +116,43 @@ test("protected classification denies dynamic dispatch and repository-defined pa
   }
 });
 
+test("protected classification blocks practical dynamic-dispatch bypasses under semantic Green", () => {
+  for (const command of [
+    "FOO+=bar git commit -m done",
+    "${UNSET:-git} commit -m done",
+    "ash -c 'git commit -m done'",
+    "fish -c 'git push'",
+    "busybox sh -c 'git push'",
+    "toybox sh -c 'git push'",
+    "node -e \"require('node:child_process').execFileSync('git',['commit','-m','x'])\"",
+    "node --eval \"process.exit()\"",
+    "node -p \"process.version\"",
+    "node --print \"process.version\"",
+    "node -r ./hook.js script.js",
+    "node --require=./hook.js script.js",
+    "node --import ./hook.mjs script.js",
+    "python -c \"__import__('subprocess').run(['git','commit','-m','x'])\"",
+    "python -m pip install x",
+    "python3 -c \"__import__('os').system('git push')\"",
+    "python3 -m pip install x",
+  ]) {
+    assert.equal(isProtectedCommand(command), true, command);
+    assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);
+  }
+});
+
+test("semantic Green retains the documented direct-script transitive-behavior residual", () => {
+  for (const command of [
+    "node script.js",
+    "python script.py",
+    "python3 script.py",
+    "unknown-benign-command",
+  ]) {
+    assert.equal(isProtectedCommand(command), false, command);
+    assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, true, command);
+  }
+});
+
 test("protected classification finds family actions after global options", () => {
   for (const command of [
     "pip --proxy http://localhost install thing",
