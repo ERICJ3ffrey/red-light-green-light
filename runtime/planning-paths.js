@@ -32,15 +32,22 @@ function absolute(cwd, path) {
 }
 
 export function buildPlanningRoots(cwd, explicit = []) {
+  const canonicalCwd = canonical(cwd);
   return [
-    { path: resolve(cwd, "docs"), exact: false, explicit: false },
-    { path: resolve(cwd, "Docs"), exact: false, explicit: false },
-    { path: resolve(cwd, ".superpowers"), exact: false, explicit: false },
+    { path: resolve(cwd, "docs"), exact: false, explicit: false, absoluteExplicit: false },
+    { path: resolve(cwd, "Docs"), exact: false, explicit: false, absoluteExplicit: false },
+    { path: resolve(cwd, ".superpowers"), exact: false, explicit: false, absoluteExplicit: false },
     ...explicit.map((value) => {
       const path = absolute(cwd, value);
-      return { path, exact: Boolean(extname(path)), explicit: true };
+      return { path, exact: Boolean(extname(path)), explicit: true, absoluteExplicit: isAbsolute(value) };
     }),
-  ].map((root) => ({ ...root, path: canonical(root.path) }));
+  ].map((root) => {
+    const path = canonical(root.path);
+    // Authorization reflects filesystem state at evaluation time; Task 8 documents the external TOCTOU residual.
+    const escapedRelativeRoot = !root.absoluteExplicit
+      && (!canonicalCwd || !path || !inside(path, canonicalCwd));
+    return { ...root, path: escapedRelativeRoot ? null : path };
+  });
 }
 
 export function isAllowedPlanningWrite(inputPath, roots) {
@@ -62,11 +69,15 @@ export function isAllowedPlanningWrite(inputPath, roots) {
 
 export function isAllowedScopedWrite(inputPath, cwd, allowedPaths = []) {
   const path = canonical(inputPath);
-  if (!path) return false;
+  const canonicalCwd = canonical(cwd);
+  if (!path || !canonicalCwd) return false;
 
   return allowedPaths.some((value) => {
-    const lexicalRoot = isAbsolute(value) ? resolve(value) : resolve(cwd, value);
+    const absoluteRoot = isAbsolute(value);
+    const lexicalRoot = absoluteRoot ? resolve(value) : resolve(cwd, value);
     const root = canonical(lexicalRoot);
-    return Boolean(root) && (path === root || inside(path, root));
+    // Authorization reflects filesystem state at evaluation time; Task 8 documents the external TOCTOU residual.
+    if (!root || (!absoluteRoot && !inside(root, canonicalCwd))) return false;
+    return path === root || inside(path, root);
   });
 }

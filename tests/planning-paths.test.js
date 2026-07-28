@@ -23,6 +23,7 @@ function withSymlinkFixture(t) {
     symlinkSync(outsideFile, join(repo, "scope", "file-link.md"), "file");
     symlinkSync(outside, join(repo, "docs", "parent-link"), "dir");
     symlinkSync(outside, join(repo, "scope", "parent-link"), "dir");
+    symlinkSync(outside, join(repo, "scope-link"), "dir");
   } catch (error) {
     if (error?.code === "EPERM" || error?.code === "EACCES") {
       t.skip(`symlinks unavailable: ${error.code}`);
@@ -77,6 +78,30 @@ test("Yellow planning roots deny symlinked-parent nonexistent-target escapes", (
   assert.equal(isAllowedPlanningWrite(join(fixture.repo, "docs", "parent-link", "new-plan.md"), roots), false);
 });
 
+test("Yellow denies default and relative explicit roots that directly symlink outside cwd", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "rlgl-root-links-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const repo = join(root, "repo");
+  const outside = join(root, "outside");
+  mkdirSync(repo, { recursive: true });
+  mkdirSync(outside, { recursive: true });
+  writeFileSync(join(outside, "auth-plan.md"), "outside");
+
+  try {
+    symlinkSync(outside, join(repo, "docs"), "dir");
+    symlinkSync(outside, join(repo, "scope-link"), "dir");
+  } catch (error) {
+    if (error?.code === "EPERM" || error?.code === "EACCES") {
+      t.skip(`symlinks unavailable: ${error.code}`);
+      return;
+    }
+    throw error;
+  }
+
+  assert.equal(isAllowedPlanningWrite(join(repo, "docs", "auth-plan.md"), buildPlanningRoots(repo, [])), false);
+  assert.equal(isAllowedPlanningWrite(join(repo, "scope-link", "auth-plan.md"), buildPlanningRoots(repo, ["scope-link"])), false);
+});
+
 test("path-bound Green denies existing-file symlink escapes", (t) => {
   const fixture = withSymlinkFixture(t);
   if (!fixture) return;
@@ -87,4 +112,10 @@ test("path-bound Green denies symlinked-parent nonexistent-target escapes", (t) 
   const fixture = withSymlinkFixture(t);
   if (!fixture) return;
   assert.equal(isAllowedScopedWrite(join(fixture.repo, "scope", "parent-link", "new.md"), fixture.repo, ["scope"]), false);
+});
+
+test("path-bound Green denies a relative allowlist root that directly symlinks outside cwd", (t) => {
+  const fixture = withSymlinkFixture(t);
+  if (!fixture) return;
+  assert.equal(isAllowedScopedWrite(join(fixture.repo, "scope-link", "new.md"), fixture.repo, ["scope-link"]), false);
 });

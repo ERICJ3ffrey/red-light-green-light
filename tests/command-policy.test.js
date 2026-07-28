@@ -33,6 +33,11 @@ test("read-only shell rejects exact restricted-shell bypasses", () => {
     "npm audit fix",
     "npm test",
     "ls & node scripts/fix.js",
+    "rg --pre 'touch /tmp/pwn' needle .",
+    "rg --pre=cat needle .",
+    "tree -o victim.txt .",
+    "file -C -m custom.magic",
+    "date --set tomorrow",
   ]) assert.equal(isReadOnlyCommand(command), false, command);
 });
 
@@ -57,7 +62,7 @@ test("protected classification catches option and Windows executable bypasses", 
   ]) assert.equal(isProtectedCommand(command), true, command);
 });
 
-test("protected classification preserves known gate categories and executable wrappers", () => {
+test("protected classification preserves known gate categories and denies wrappers", () => {
   for (const command of [
     "git commit -am done",
     "git push origin main",
@@ -72,9 +77,52 @@ test("protected classification preserves known gate categories and executable wr
     "bash script-that-might-commit.sh",
     "powershell.exe -NoProfile -NonInteractive -Command git push origin main",
     "pwsh -ExecutionPolicy Bypass -Command npm install x",
+    "bash -c 'echo hello'",
+    "sh -c 'echo hello'",
+    "cmd /c echo hello",
+    "powershell -Command 'Write-Output hello'",
+    "eval echo hello",
+    "exec echo hello",
+    "xargs echo hello",
+    "find . -print",
+    "sudo git status",
+  ]) {
+    assert.equal(isProtectedCommand(command), true, command);
+    assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);
+  }
+});
+
+test("protected classification denies dynamic dispatch and repository-defined package commands", () => {
+  for (const command of [
+    "bash -c 'exec git commit -m done'",
+    "bash -c 'if true; then git commit -m done; fi'",
+    "powershell -Command \"Invoke-Expression 'git commit -m done'\"",
+    "powershell -Command \"Start-Process git -ArgumentList commit\"",
+    "FOO=bar git commit -m done",
+    "$'git' commit -m done",
+    "npm exec -- git commit -m done",
+    "npx git commit -m done",
+    "npm test",
+    "npm run check",
+    "npm run-script check",
+    "npm start",
+    "npm stop",
+    "npm restart",
+    "npm exec echo",
+    "pnpm dlx tool",
+  ]) {
+    assert.equal(isProtectedCommand(command), true, command);
+    assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);
+  }
+});
+
+test("protected classification finds family actions after global options", () => {
+  for (const command of [
+    "pip --proxy http://localhost install thing",
+    "kubectl --namespace default delete pod app",
+    "terraform -chdir=. destroy",
+    "docker --context default push image",
   ]) assert.equal(isProtectedCommand(command), true, command);
-  assert.equal(isProtectedCommand("npm test"), false);
-  assert.equal(isProtectedCommand("bash -c 'echo hello'"), false);
 });
 
 test("protected classification fails closed on malformed or unknown family syntax", () => {
@@ -93,6 +141,14 @@ test("protected commands stay blocked under semantic Green", () => {
     "git --no-pager push",
     "npm --prefix . install lodash",
     "git.exe commit -m done",
+    "bash -c 'exec git commit -m done'",
+    "bash -c 'if true; then git commit -m done; fi'",
+    "powershell -Command \"Invoke-Expression 'git commit -m done'\"",
+    "powershell -Command \"Start-Process git -ArgumentList commit\"",
+    "FOO=bar git commit -m done",
+    "$'git' commit -m done",
+    "npm exec -- git commit -m done",
+    "npx git commit -m done",
   ]) assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);
 });
 

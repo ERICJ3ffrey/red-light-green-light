@@ -8,9 +8,9 @@ const READ_ONLY_TOOLS = new Set([
   "questionnaire", "interview", "ask_user", "AskUserQuestion"
 ]);
 const SAFE_EXECUTABLES = new Set([
-  "cat", "head", "tail", "grep", "rg", "ls", "pwd", "wc",
-  "diff", "file", "stat", "du", "df", "tree", "which", "whereis", "type", "printenv",
-  "uname", "whoami", "id", "date", "cal", "uptime", "ps", "jq", "bat", "eza"
+  "cat", "head", "tail", "grep", "ls", "pwd", "wc",
+  "diff", "stat", "du", "df", "which", "whereis", "type", "printenv",
+  "uname", "whoami", "id", "cal", "uptime", "ps", "jq", "bat", "eza"
 ]);
 const SHELL_OPERATORS = new Set(["|", "||", "&", "&&", ";", "<", ">", "<<", ">>", "(", ")"]);
 const GIT_PROTECTED = new Set([
@@ -23,10 +23,17 @@ const GIT_KNOWN = new Set([
   "ls-tree", "ls-remote", "cat-file", "name-rev", "shortlog", "blame", "bisect", "worktree",
   "switch", "restore", "fetch", "gc", "clean", "reflog", "notes", "submodule", "archive", "bundle"
 ]);
-const PACKAGE_PROTECTED = new Set(["install", "add", "remove", "uninstall", "update", "upgrade", "publish", "link", "unlink", "ci"]);
+const PACKAGE_PROTECTED = new Set([
+  "install", "add", "remove", "uninstall", "update", "upgrade", "publish", "link", "unlink", "ci",
+  "test", "run", "run-script", "start", "stop", "restart", "exec", "dlx"
+]);
 const PACKAGE_KNOWN = new Set([
-  ...PACKAGE_PROTECTED, "test", "run", "run-script", "start", "stop", "restart", "list", "ls",
-  "view", "info", "outdated", "audit", "help", "version", "exec", "pack", "whoami", "config"
+  ...PACKAGE_PROTECTED, "list", "ls", "view", "info", "outdated", "audit", "help", "version",
+  "pack", "whoami", "config"
+]);
+const UNCONDITIONAL_WRAPPERS = new Set([
+  "sh", "bash", "zsh", "dash", "ksh", "cmd", "powershell", "pwsh",
+  "eval", "exec", "xargs", "find", "sudo"
 ]);
 
 function executableName(value) {
@@ -65,6 +72,7 @@ function tokenizeShell(command) {
       continue;
     }
 
+    if (char === "$" && text[index + 1] === "'") return null;
     if (char === "'" || char === '"') {
       quote = char;
       wordStarted = true;
@@ -180,14 +188,22 @@ function packageInvocation(words) {
 
 function classifyProtectedSegment(words, depth = 0) {
   if (depth > 4 || !words.length) return true;
+  if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[0])) {
+    let index = 0;
+    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] || "")) index += 1;
+    return classifyProtectedSegment(words.slice(index), depth + 1);
+  }
+
   const executable = executableName(words[0]);
+  const actionTokens = words.slice(1).map((word) => word.toLowerCase());
+  if (UNCONDITIONAL_WRAPPERS.has(executable) || executable === "npx") return true;
   if (executable === "git") return gitInvocation(words).protected;
   if (executable === "npm" || executable === "pnpm" || executable === "yarn") return packageInvocation(words).protected;
-  if (executable === "pip" || executable === "pip3") return ["install", "uninstall"].includes(words[1]?.toLowerCase());
-  if (executable === "vercel" || executable === "netlify") return words.some((word) => word.toLowerCase() === "deploy");
-  if (executable === "kubectl") return ["apply", "delete"].includes(words[1]?.toLowerCase());
-  if (executable === "terraform") return ["apply", "destroy"].includes(words[1]?.toLowerCase());
-  if (executable === "docker") return words[1]?.toLowerCase() === "push";
+  if (executable === "pip" || executable === "pip3") return actionTokens.some((word) => word === "install" || word === "uninstall");
+  if (executable === "vercel" || executable === "netlify") return actionTokens.includes("deploy");
+  if (executable === "kubectl") return actionTokens.some((word) => word === "apply" || word === "delete");
+  if (executable === "terraform") return actionTokens.some((word) => word === "apply" || word === "destroy");
+  if (executable === "docker") return actionTokens.includes("push");
 
   if (executable === "env") {
     let index = 1;
@@ -210,42 +226,6 @@ function classifyProtectedSegment(words, depth = 0) {
     let index = 1;
     while (words[index]?.startsWith("-")) index += 1;
     return classifyProtectedSegment(words.slice(index), depth + 1);
-  }
-  if (["sh", "bash", "zsh", "dash", "ksh"].includes(executable)) {
-    const commandIndex = words.findIndex((word, index) => index > 0 && word === "-c");
-    return commandIndex === -1 || commandIndex + 1 >= words.length
-      ? true
-      : isProtectedCommand(words[commandIndex + 1]);
-  }
-  if (executable === "cmd") {
-    return words[1]?.toLowerCase() !== "/c" || words.length < 3
-      ? true
-      : isProtectedCommand(words.slice(2).join(" "));
-  }
-  if (["powershell", "pwsh"].includes(executable)) {
-    const noValue = new Set(["-noprofile", "-noninteractive", "-nologo"]);
-    const withValue = new Set(["-executionpolicy", "-inputformat", "-outputformat", "-workingdirectory"]);
-    let index = 1;
-    while (index < words.length) {
-      const option = words[index].toLowerCase();
-      if (["-command", "-c"].includes(option)) {
-        return index + 1 >= words.length
-          ? true
-          : isProtectedCommand(words.slice(index + 1).join(" "));
-      }
-      if (option === "-file") return true;
-      if (noValue.has(option)) {
-        index += 1;
-        continue;
-      }
-      if (withValue.has(option)) {
-        if (index + 1 >= words.length) return true;
-        index += 2;
-        continue;
-      }
-      return true;
-    }
-    return true;
   }
   return false;
 }
@@ -289,6 +269,7 @@ function safePackage(words) {
 
 function safeSegment(words) {
   const executable = executableName(words[0]);
+  if (executable === "rg") return !words.slice(1).some((arg) => arg === "--pre" || arg.startsWith("--pre="));
   if (SAFE_EXECUTABLES.has(executable)) return true;
   if (executable === "git") return safeGit(words);
   if (executable === "npm" || executable === "pnpm" || executable === "yarn") return safePackage(words);
