@@ -135,6 +135,19 @@ test("protected classification blocks practical dynamic-dispatch bypasses under 
     "python -m pip install x",
     "python3 -c \"__import__('os').system('git push')\"",
     "python3 -m pip install x",
+    "python -Ic \"print('dynamic')\"",
+    "python -qc \"print('dynamic')\"",
+    "python -Bc \"print('dynamic')\"",
+    "\"$SHELL\" -c 'git commit -m x'",
+    "$GIT commit -m x",
+    "time git commit -m x",
+    "nice git commit -m x",
+    "timeout 5 git push",
+    "setsid git commit -m x",
+    "node --run=test",
+    "node --experimental-loader=./hook.mjs script.js",
+    "bunx package",
+    "pnpx package",
   ]) {
     assert.equal(isProtectedCommand(command), true, command);
     assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);

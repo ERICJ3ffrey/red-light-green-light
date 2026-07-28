@@ -34,7 +34,7 @@ const PACKAGE_KNOWN = new Set([
 const UNCONDITIONAL_WRAPPERS = new Set([
   "sh", "bash", "zsh", "dash", "ksh", "ash", "fish", "csh", "tcsh",
   "cmd", "powershell", "pwsh", "eval", "exec", "xargs", "find", "sudo",
-  "busybox", "toybox"
+  "busybox", "toybox", "time", "nice", "timeout", "setsid", "bunx", "pnpx"
 ]);
 
 function executableName(value) {
@@ -64,7 +64,7 @@ function tokenizeShell(command) {
         index += 1;
         if (index >= text.length) return null;
         word += text[index];
-      } else if (char === "`" || (char === "$" && ["(", "{"].includes(text[index + 1]))) {
+      } else if (char === "`" || (char === "$" && quote === '"')) {
         return null;
       } else {
         word += char;
@@ -73,7 +73,7 @@ function tokenizeShell(command) {
       continue;
     }
 
-    if (char === "$" && text[index + 1] === "'") return null;
+    if (char === "$") return null;
     if (char === "'" || char === '"') {
       quote = char;
       wordStarted = true;
@@ -198,12 +198,12 @@ function classifyProtectedSegment(words, depth = 0) {
   if (executable === "npm" || executable === "pnpm" || executable === "yarn") return packageInvocation(words).protected;
   if (executable === "pip" || executable === "pip3") return actionTokens.some((word) => word === "install" || word === "uninstall");
   if (executable === "node") {
-    return actionTokens.some((word) => ["-e", "--eval", "-p", "--print", "-r", "--require", "--import"].includes(word)
+    return actionTokens.some((word) => ["-e", "--eval", "-p", "--print", "-r", "--require", "--import", "--run", "--loader", "--experimental-loader"].includes(word)
       || /^-(?:e|p|r).+/.test(word)
-      || /^(?:--eval|--print|--require|--import)=/.test(word));
+      || /^(?:--eval|--print|--require|--import|--run|--loader|--experimental-loader)=/.test(word));
   }
   if (executable === "python" || executable === "python3") {
-    return actionTokens.some((word) => /^-(?:c|m)(?:.|$)/.test(word));
+    return actionTokens.some((word) => /^-[^-]*[cm]/.test(word));
   }
   if (executable === "vercel" || executable === "netlify") return actionTokens.includes("deploy");
   if (executable === "kubectl") return actionTokens.some((word) => word === "apply" || word === "delete");
