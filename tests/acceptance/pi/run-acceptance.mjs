@@ -46,12 +46,23 @@ git(['init']);
 git(['add', 'src/value.js']);
 git(['-c', 'user.name=Acceptance', '-c', 'user.email=acceptance@example.com', 'commit', '-m', 'baseline']);
 
-const packed = spawnSync('npm', ['pack', '--pack-destination', supportDir, '--json'], {
-  cwd: sourcePackageRoot,
-  encoding: 'utf8',
-  shell: false,
-});
-if (packed.status !== 0) throw new Error(`npm pack failed: ${packed.stderr}`);
+const packed = process.platform === 'win32'
+  ? spawnSync(
+      'powershell.exe',
+      ['-NoProfile', '-NonInteractive', '-Command', '& npm pack --pack-destination $env:RLGL_PACK_DEST --json'],
+      {
+        cwd: sourcePackageRoot,
+        env: { ...process.env, RLGL_PACK_DEST: supportDir },
+        encoding: 'utf8',
+        shell: false,
+      },
+    )
+  : spawnSync('npm', ['pack', '--pack-destination', supportDir, '--json'], {
+      cwd: sourcePackageRoot,
+      encoding: 'utf8',
+      shell: false,
+    });
+if (packed.status !== 0) throw new Error(`npm pack failed: ${packed.error?.message || packed.stderr || `exit ${packed.status}`}`);
 const packedRecord = JSON.parse(packed.stdout)[0];
 const tarballPath = join(supportDir, packedRecord.filename);
 const extractedRoot = join(supportDir, 'extracted');
