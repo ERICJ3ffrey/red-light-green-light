@@ -1,0 +1,38 @@
+{
+  "name": "red-light-green-light",
+  "version": "0.1.0",
+  "description": "User-controlled Red, Yellow, and scoped Green authority for AI coding agents",
+  "type": "module",
+  "license": "MIT",
+  "author": "ERICJ3ffrey",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ERICJ3ffrey/red-light-green-light.git"
+  },
+  "keywords": [
+    "pi-package",
+    "agent-skills",
+    "permissions",
+    "planning",
+    "ai-coding-agent"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "validate": "node scripts/validate-package.mjs"
+  },
+  "pi": {
+    "extensions": ["./.pi/extensions/red-light-green-light.ts"],
+    "skills": ["./skills"]
+  }
+}
