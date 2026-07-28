@@ -31,6 +31,8 @@ test("read-only shell rejects exact restricted-shell bypasses", () => {
     "git branch -D main",
     "git remote set-url origin x",
     "npm audit fix",
+    "npm audit --fix=true",
+    "pnpm audit --fix=true",
     "npm test",
     "ls & node scripts/fix.js",
     "rg --pre 'touch /tmp/pwn' needle .",
@@ -188,6 +190,11 @@ test("protected classification finds family actions after global options", () =>
     "kubectl create namespace x",
     "terraform state rm resource.x",
     "docker rm container",
+    "git-commit -m x",
+    "pip3.12 install thing",
+    "python3.12 -m pip install thing",
+    "py -m pip install thing",
+    "docker-compose up",
   ]) {
     assert.equal(isProtectedCommand(command), true, command);
     assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);

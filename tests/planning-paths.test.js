@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, parse, resolve } from "node:path";
 import test from "node:test";
 import { buildPlanningRoots, isAllowedPlanningWrite, isAllowedScopedWrite } from "../runtime/planning-paths.js";
 
@@ -50,13 +50,19 @@ test("yellow rejects production, tests, and non-planning data files", () => {
   assert.equal(isAllowedPlanningWrite("/repo/docs/config.json", roots), false);
   assert.equal(isAllowedPlanningWrite("/repo/docs/settings.yaml", roots), false);
   assert.equal(isAllowedPlanningWrite("/repo/docs/README.md", roots), false);
+  assert.equal(isAllowedPlanningWrite("/repo/docs/planet-customers.json", roots), false);
+  assert.equal(isAllowedPlanningWrite("/repo/docs/specimens/data.json", roots), false);
   assert.equal(isAllowedPlanningWrite("/repo/docs/plans/config.json", roots), true);
 });
 
-test("yellow rejects an overly broad explicit project root", () => {
-  const roots = buildPlanningRoots(cwd, ["."]);
-  assert.equal(isAllowedPlanningWrite("/repo/package.json", roots), false);
-  assert.equal(isAllowedPlanningWrite("/repo/notes/auth-plan.md", roots), false);
+test("yellow rejects overly broad project and filesystem roots", () => {
+  const projectRoots = buildPlanningRoots(cwd, ["."]);
+  assert.equal(isAllowedPlanningWrite("/repo/package.json", projectRoots), false);
+  assert.equal(isAllowedPlanningWrite("/repo/notes/auth-plan.md", projectRoots), false);
+
+  const filesystemRoot = parse(resolve(cwd)).root;
+  const filesystemRoots = buildPlanningRoots(cwd, [filesystemRoot]);
+  assert.equal(isAllowedPlanningWrite(join(filesystemRoot, "plan-notes.yaml"), filesystemRoots), false);
 });
 
 test("explicit outside-root planning file must look like a planning artifact", () => {

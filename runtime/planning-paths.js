@@ -2,7 +2,7 @@ import { lstatSync, realpathSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, relative, resolve, sep } from "node:path";
 
 const PLAN_EXTENSIONS = new Set([".md", ".txt", ".json", ".yaml", ".yml"]);
-const PLAN_NAME = /(plan|spec|design|review|checklist|handoff|contract|notes?)/i;
+const PLAN_NAME = /(?:^|[\\/_.\s-])(plans?|planning|spec|design|review|checklist|handoff|contract|notes?)(?:$|[\\/_.\s-])/i;
 
 function inside(path, root) {
   const rel = relative(root, path);
@@ -51,7 +51,9 @@ export function buildPlanningRoots(cwd, explicit = []) {
     // Authorization reflects filesystem state at evaluation time; Task 8 documents the external TOCTOU residual.
     const escapedRelativeRoot = !root.absoluteExplicit
       && (!canonicalCwd || !path || !inside(path, canonicalCwd));
-    const overlyBroadRoot = root.explicit && !root.exact && canonicalCwd && path === canonicalCwd;
+    const filesystemRoot = path && dirname(path) === path;
+    const overlyBroadRoot = root.explicit && !root.exact
+      && (filesystemRoot || (canonicalCwd && path === canonicalCwd));
     return { ...root, path: escapedRelativeRoot || overlyBroadRoot ? null : path };
   });
 }

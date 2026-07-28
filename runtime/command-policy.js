@@ -195,15 +195,16 @@ function classifyProtectedSegment(words, depth = 0) {
   const executable = executableName(words[0]);
   const actionTokens = words.slice(1).map((word) => word.toLowerCase());
   if (UNCONDITIONAL_WRAPPERS.has(executable) || executable === "npx") return true;
+  if (executable.startsWith("git-") || executable === "docker-compose") return true;
   if (executable === "git") return !safeGit(words);
   if (executable === "npm" || executable === "pnpm" || executable === "yarn") return !safePackage(words);
-  if (executable === "pip" || executable === "pip3") return true;
+  if (/^pip(?:\d+(?:\.\d+)*)?$/.test(executable)) return true;
   if (executable === "node") {
     return actionTokens.some((word) => ["-e", "--eval", "-p", "--print", "-r", "--require", "--import", "--run", "--loader", "--experimental-loader", "--test-reporter", "--test-reporter-destination"].includes(word)
       || /^-(?:e|p|r).+/.test(word)
       || /^(?:--eval|--print|--require|--import|--run|--loader|--experimental-loader|--test-reporter|--test-reporter-destination)=/.test(word));
   }
-  if (executable === "python" || executable === "python3") {
+  if (/^python(?:\d+(?:\.\d+)*)?$/.test(executable) || executable === "py") {
     return actionTokens.some((word) => /^-[^-]*[cm]/.test(word));
   }
   if (["vercel", "netlify", "kubectl", "terraform", "docker"].includes(executable)) return true;
@@ -267,7 +268,10 @@ function safePackage(words) {
   const invocation = packageInvocation(words);
   if (!invocation.known || invocation.protected) return false;
   if (!["list", "ls", "view", "info", "outdated", "audit"].includes(invocation.subcommand)) return false;
-  return invocation.subcommand !== "audit" || !invocation.args.some((arg) => arg.toLowerCase() === "fix" || arg === "--fix");
+  return invocation.subcommand !== "audit" || !invocation.args.some((arg) => {
+    const value = arg.toLowerCase();
+    return value === "fix" || value === "--fix" || value.startsWith("--fix=");
+  });
 }
 
 function safeSegment(words) {

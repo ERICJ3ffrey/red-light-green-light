@@ -22,7 +22,7 @@ Red permissions plus planning artifacts under approved planning paths. Specs, pl
 
 ### Green
 
-Implement only the user-named scope. Do not perform adjacent cleanup or scope expansion. Dependency changes, protected Git operations, sends, publishing, deployment, purchases, and destructive actions require separate user-controlled gates; Stage 1 native adapters may keep them mechanically blocked even after approval.
+Implement only the user-named scope. Do not perform adjacent cleanup or scope expansion. Dependency changes, protected Git operations, sends, publishing, deployment, purchases, and destructive actions require separate user-controlled gates. The Stage 1 Pi adapter keeps recognized protected actions blocked in every light; perform an approved protected action through a separate user-controlled channel.
 
 Green persists while its scope is incomplete and unblocked. When the scope completes or cannot continue, end the response with exactly one marker:
 
