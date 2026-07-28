@@ -32,6 +32,19 @@ test("green accepts an optional path allowlist", () => {
   });
 });
 
+test("green rejects a paths delimiter without paths", () => {
+  const expected = { ok: false, error: "--paths requires at least one path." };
+  assert.deepEqual(parseLightArgs("green fix auth --paths"), expected);
+  assert.deepEqual(parseLightArgs("  green fix auth --paths   "), expected);
+});
+
+test("paths delimiter must be a standalone token", () => {
+  assert.deepEqual(parseLightArgs("green fix --pathsfoo"), {
+    ok: true,
+    transition: { mode: "green", scope: "fix --pathsfoo" },
+  });
+});
+
 test("yellow accepts an explicit planning path", () => {
   assert.deepEqual(parseLightArgs("yellow docs/plans/auth.md"), {
     ok: true,
@@ -64,10 +77,22 @@ test("user transition creates scoped green", () => {
   assert.equal(next.grantedByUserEntry, "entry-1");
 });
 
+test("user transition rejects an unknown mode", () => {
+  assert.throws(
+    () => applyUserTransition(createRedState(), { mode: "bluish" }),
+    /Unknown light mode: bluish/,
+  );
+});
+
 test("release markers only reduce green to red", () => {
   assert.equal(detectRelease("Finished.\nLIGHT_RELEASE: complete"), "complete");
   assert.equal(detectRelease("Need a decision.\nLIGHT_RELEASE: blocked"), "blocked");
   assert.equal(detectRelease("Still implementing."), undefined);
+});
+
+test("release marker must be at the end of the entire output", () => {
+  assert.equal(detectRelease("LIGHT_RELEASE: complete\nI will continue working."), undefined);
+  assert.equal(detectRelease("Finished.\nLIGHT_RELEASE: complete  \n\t"), "complete");
 });
 
 test("authority context repeats mode and scope", () => {
@@ -79,4 +104,21 @@ test("authority context repeats mode and scope", () => {
   assert.match(text, /GREEN/);
   assert.match(text, /implement auth plan/);
   assert.match(text, /LIGHT_RELEASE/);
+});
+
+test("unknown authority modes fail closed to red", () => {
+  const text = renderAuthorityContext({ mode: "bluish", scope: "anything" });
+  assert.match(text, /RED/);
+  assert.match(text, /Read, research, and discuss only/);
+  assert.doesNotMatch(text, /Authorized scope/);
+});
+
+test("path-bound green authority context lists every allowed path", () => {
+  const text = renderAuthorityContext({
+    mode: "green",
+    scope: "implement auth",
+    scopeEnforcement: "path-bound",
+    allowedPaths: ["src/auth.js", "tests/auth.test.js"],
+  });
+  assert.match(text, /Allowed paths: src\/auth\.js, tests\/auth\.test\.js/);
 });
