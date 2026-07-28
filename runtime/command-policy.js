@@ -33,7 +33,7 @@ const PACKAGE_KNOWN = new Set([
 ]);
 const UNCONDITIONAL_WRAPPERS = new Set([
   "sh", "bash", "zsh", "dash", "ksh", "ash", "fish", "csh", "tcsh",
-  "cmd", "powershell", "pwsh", "eval", "exec", "xargs", "find", "sudo",
+  "cmd", "powershell", "pwsh", "eval", "exec", "xargs", "find", "sudo", "env",
   "busybox", "toybox", "time", "nice", "timeout", "setsid", "bunx", "pnpx"
 ]);
 
@@ -62,7 +62,7 @@ function tokenizeShell(command) {
         quote = null;
       } else if (char === "\\" && quote === '"') {
         index += 1;
-        if (index >= text.length) return null;
+        if (index >= text.length || text[index] === "\r" || text[index] === "\n") return null;
         word += text[index];
       } else if (char === "`" || (char === "$" && quote === '"')) {
         return null;
@@ -81,7 +81,7 @@ function tokenizeShell(command) {
     }
     if (char === "\\") {
       index += 1;
-      if (index >= text.length) return null;
+      if (index >= text.length || text[index] === "\r" || text[index] === "\n") return null;
       word += text[index];
       wordStarted = true;
       continue;
@@ -198,9 +198,9 @@ function classifyProtectedSegment(words, depth = 0) {
   if (executable === "npm" || executable === "pnpm" || executable === "yarn") return packageInvocation(words).protected;
   if (executable === "pip" || executable === "pip3") return actionTokens.some((word) => word === "install" || word === "uninstall");
   if (executable === "node") {
-    return actionTokens.some((word) => ["-e", "--eval", "-p", "--print", "-r", "--require", "--import", "--run", "--loader", "--experimental-loader"].includes(word)
+    return actionTokens.some((word) => ["-e", "--eval", "-p", "--print", "-r", "--require", "--import", "--run", "--loader", "--experimental-loader", "--test-reporter", "--test-reporter-destination"].includes(word)
       || /^-(?:e|p|r).+/.test(word)
-      || /^(?:--eval|--print|--require|--import|--run|--loader|--experimental-loader)=/.test(word));
+      || /^(?:--eval|--print|--require|--import|--run|--loader|--experimental-loader|--test-reporter|--test-reporter-destination)=/.test(word));
   }
   if (executable === "python" || executable === "python3") {
     return actionTokens.some((word) => /^-[^-]*[cm]/.test(word));

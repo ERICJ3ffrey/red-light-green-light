@@ -148,6 +148,9 @@ test("protected classification blocks practical dynamic-dispatch bypasses under 
     "node --experimental-loader=./hook.mjs script.js",
     "bunx package",
     "pnpx package",
+    "g\\\nit commit -m x",
+    "env NODE_OPTIONS=--require=./hook.js node script.js",
+    "node --test-reporter=./hook.mjs --test",
   ]) {
     assert.equal(isProtectedCommand(command), true, command);
     assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);
