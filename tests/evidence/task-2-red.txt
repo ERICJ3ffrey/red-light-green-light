@@ -1,3 +1,7 @@
+HISTORICAL TDD RED EVIDENCE — EXPECTED FAILURE
+This transcript records the intentional pre-implementation failure before package.json existed.
+It is superseded by the passing package suite (`npm test`) and is not an unresolved release failure.
+
 node:fs:440
     return binding.readFileUtf8(path, stringToFlags(options.flag));
                    ^

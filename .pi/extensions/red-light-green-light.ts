@@ -153,9 +153,12 @@ export default function redLightGreenLight(pi: ExtensionAPI): void {
     pendingRelease = detectRelease(messageText(event.message));
   });
 
-  pi.on("agent_settled", async (_event, ctx) => {
-    if (!pendingRelease) return;
-    persist(createRedState(pendingRelease === "complete" ? "complete" : pendingRelease) as LightState, ctx);
+  pi.on("agent_end", async (event, ctx) => {
+    const cancelled = (event.messages as Array<{ role?: string; stopReason?: string }> | undefined)
+      ?.some((message) => message.role === "assistant" && message.stopReason === "aborted") ?? false;
+    const resetReason = pendingRelease || (cancelled ? "cancelled" : undefined);
+    if (!resetReason || state.mode !== "green") return;
+    persist(createRedState(resetReason) as LightState, ctx);
     pendingRelease = undefined;
     applyTools();
   });

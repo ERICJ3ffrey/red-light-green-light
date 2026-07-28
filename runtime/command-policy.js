@@ -9,7 +9,7 @@ const READ_ONLY_TOOLS = new Set([
 ]);
 const SAFE_EXECUTABLES = new Set([
   "cat", "head", "tail", "grep", "ls", "pwd", "wc",
-  "diff", "stat", "du", "df", "which", "whereis", "type", "printenv",
+  "stat", "du", "df", "which", "whereis", "type", "printenv",
   "uname", "whoami", "id", "cal", "uptime", "ps", "jq", "bat", "eza"
 ]);
 const SHELL_OPERATORS = new Set(["|", "||", "&", "&&", ";", "<", ">", "<<", ">>", "(", ")"]);
@@ -277,6 +277,10 @@ function safePackage(words) {
 function safeSegment(words) {
   const executable = executableName(words[0]);
   if (executable === "rg") return !words.slice(1).some((arg) => arg === "--pre" || arg.startsWith("--pre="));
+  if (executable === "diff") {
+    return !words.slice(1).some((arg) => arg === "-o" || arg.startsWith("-o")
+      || arg === "--output" || arg.startsWith("--output="));
+  }
   if (SAFE_EXECUTABLES.has(executable)) return true;
   if (executable === "git") return safeGit(words);
   if (executable === "npm" || executable === "pnpm" || executable === "yarn") return safePackage(words);

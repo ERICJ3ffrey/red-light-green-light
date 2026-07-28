@@ -87,6 +87,12 @@ test("skill validation rejects frontmatter after leading prose", () => {
   assert.ok(errors.includes("SKILL.md missing bounded frontmatter"));
 });
 
+test("historical RED evidence is labeled as expected and superseded", () => {
+  const text = readFileSync(new URL("./evidence/task-2-red.txt", import.meta.url), "utf8");
+  assert.match(text, /^HISTORICAL TDD RED EVIDENCE — EXPECTED FAILURE/);
+  assert.match(text, /superseded by the passing package suite/);
+});
+
 test("README documents Pi install, commands, and enforcement limits", () => {
   const text = readFileSync(new URL("../README.md", import.meta.url), "utf8");
   assert.match(text, /pi install git:github\.com\/ERICJ3ffrey\/red-light-green-light/);

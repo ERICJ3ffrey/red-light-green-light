@@ -152,16 +152,33 @@ test("yellow permits a plan write and blocks source edit", async () => {
   assert.equal(block.block, true);
 });
 
-test("green completion marker returns to red only after settle", async () => {
+test("green completion returns to red after the current run and before follow-ups", async () => {
   const pi = fakePi();
   extension(pi.api);
   const ctx = context();
   await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
   await sendLight(pi, "green implement auth", ctx);
-  await first(pi.handlers, "message_end")({ message: { role: "assistant", content: [{ type: "text", text: "Done\nLIGHT_RELEASE: complete" }] } }, ctx);
+  const completed = { role: "assistant", content: [{ type: "text", text: "Done\nLIGHT_RELEASE: complete" }] };
+  await first(pi.handlers, "message_end")({ message: completed }, ctx);
   assert.equal(pi.entries.at(-1).data.mode, "green");
-  await first(pi.handlers, "agent_settled")({}, ctx);
+  await first(pi.handlers, "agent_end")({ messages: [completed], willRetry: false }, ctx);
   assert.equal(pi.entries.at(-1).data.mode, "red");
+  await first(pi.handlers, "message_end")({ message: { role: "assistant", content: [{ type: "text", text: "Queued follow-up." }] } }, ctx);
+  assert.equal(pi.entries.at(-1).data.mode, "red");
+});
+
+test("an aborted Green run returns to Red as cancelled", async () => {
+  const pi = fakePi();
+  extension(pi.api);
+  const ctx = context();
+  await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
+  await sendLight(pi, "green implement auth", ctx);
+  await first(pi.handlers, "agent_end")({
+    messages: [{ role: "assistant", content: [], stopReason: "aborted" }],
+    willRetry: false,
+  }, ctx);
+  assert.equal(pi.entries.at(-1).data.mode, "red");
+  assert.equal(pi.entries.at(-1).data.resetReason, "cancelled");
 });
 
 test("ordinary green turn without release remains green", async () => {
@@ -170,8 +187,9 @@ test("ordinary green turn without release remains green", async () => {
   const ctx = context();
   await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
   await sendLight(pi, "green implement auth", ctx);
-  await first(pi.handlers, "message_end")({ message: { role: "assistant", content: [{ type: "text", text: "Step one complete; scope remains active." }] } }, ctx);
-  await first(pi.handlers, "agent_settled")({}, ctx);
+  const progress = { role: "assistant", content: [{ type: "text", text: "Step one complete; scope remains active." }] };
+  await first(pi.handlers, "message_end")({ message: progress }, ctx);
+  await first(pi.handlers, "agent_end")({ messages: [progress], willRetry: false }, ctx);
   assert.equal(pi.entries.at(-1).data.mode, "green");
 });
 

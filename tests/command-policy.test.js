@@ -24,6 +24,8 @@ test("read-only shell rejects exact restricted-shell bypasses", () => {
   for (const command of [
     "find . -delete",
     "sort -o victim input",
+    "diff --output=victim.txt before after",
+    "diff -o victim.txt before after",
     "uniq input output",
     "less -o logfile input",
     "more input",
