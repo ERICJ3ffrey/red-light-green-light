@@ -4,41 +4,145 @@ import { evaluateToolCall, isReadOnlyCommand, isProtectedCommand } from "../runt
 
 const cwd = "/repo";
 
-test("read-only shell permits inspection pipelines", () => {
-  assert.equal(isReadOnlyCommand("rg -n auth src | head -20"), true);
-  assert.equal(isReadOnlyCommand("git status --short"), true);
+const red = { mode: "red" };
+const yellow = { mode: "yellow", planningPaths: ["docs/plans"] };
+const semanticGreen = { mode: "green", scope: "auth", scopeEnforcement: "semantic" };
+const pathGreen = { mode: "green", scope: "auth", scopeEnforcement: "path-bound", allowedPaths: ["src/auth.js"] };
+
+test("read-only shell permits inspection commands and pipelines", () => {
+  for (const command of [
+    "rg -n auth src | head -20",
+    "git status --short",
+    "git branch --list",
+    "git remote -v",
+    "git remote get-url origin",
+    "npm audit",
+  ]) assert.equal(isReadOnlyCommand(command), true, command);
 });
 
-test("read-only shell rejects redirects, chaining, and mutation", () => {
-  assert.equal(isReadOnlyCommand("rg auth src > result.txt"), false);
-  assert.equal(isReadOnlyCommand("ls && rm -rf build"), false);
-  assert.equal(isReadOnlyCommand("node scripts/fix.js"), false);
+test("read-only shell rejects exact restricted-shell bypasses", () => {
+  for (const command of [
+    "find . -delete",
+    "sort -o victim input",
+    "uniq input output",
+    "less -o logfile input",
+    "more input",
+    "env node -e \"...\"",
+    "git branch -D main",
+    "git remote set-url origin x",
+    "npm audit fix",
+    "npm test",
+    "ls & node scripts/fix.js",
+  ]) assert.equal(isReadOnlyCommand(command), false, command);
 });
 
-test("protected commands stay blocked under green", () => {
-  assert.equal(isProtectedCommand("git commit -am done"), true);
-  assert.equal(isProtectedCommand("npm install lodash"), true);
+test("read-only shell rejects mutation, redirection, substitution, and malformed quotes", () => {
+  for (const command of [
+    "rg auth src > result.txt",
+    "ls && rm -rf build",
+    "node scripts/fix.js",
+    "echo $(touch victim)",
+    "echo `touch victim`",
+    "rg 'unclosed",
+    "git -c core.pager=evil status",
+  ]) assert.equal(isReadOnlyCommand(command), false, command);
+});
+
+test("protected classification catches option and Windows executable bypasses", () => {
+  for (const command of [
+    "git -C . commit -m done",
+    "git --no-pager push",
+    "npm --prefix . install lodash",
+    "git.exe commit -m done",
+  ]) assert.equal(isProtectedCommand(command), true, command);
+});
+
+test("protected classification preserves known gate categories and executable wrappers", () => {
+  for (const command of [
+    "git commit -am done",
+    "git push origin main",
+    "pnpm add lodash",
+    "pip install thing",
+    "vercel deploy --prod",
+    "kubectl delete pod app",
+    "terraform destroy",
+    "docker push image",
+    "env git commit -m done",
+    "bash -c 'git push origin main'",
+    "bash script-that-might-commit.sh",
+    "powershell.exe -NoProfile -NonInteractive -Command git push origin main",
+    "pwsh -ExecutionPolicy Bypass -Command npm install x",
+  ]) assert.equal(isProtectedCommand(command), true, command);
   assert.equal(isProtectedCommand("npm test"), false);
+  assert.equal(isProtectedCommand("bash -c 'echo hello'"), false);
 });
 
-test("red blocks write tools", () => {
-  const result = evaluateToolCall({ toolName: "write", input: { path: "/repo/src/auth.js" } }, { mode: "red" }, { cwd });
-  assert.equal(result.allow, false);
+test("protected classification fails closed on malformed or unknown family syntax", () => {
+  assert.equal(isProtectedCommand("git 'unclosed"), true);
+  assert.equal(isProtectedCommand("git --mystery-option commit -m done"), true);
+  assert.equal(isProtectedCommand("git mystery-subcommand"), true);
 });
 
-test("yellow permits planning file and blocks source file", () => {
-  const state = { mode: "yellow", planningPaths: ["docs/plans"] };
-  assert.equal(evaluateToolCall({ toolName: "write", input: { path: "/repo/docs/plans/auth.md" } }, state, { cwd }).allow, true);
-  assert.equal(evaluateToolCall({ toolName: "edit", input: { path: "/repo/src/auth.js" } }, state, { cwd }).allow, false);
+test("semantic Green permits benign single commands outside the restricted allowlist", () => {
+  assert.equal(evaluateToolCall({ toolName: "bash", input: { command: "echo hello" } }, semanticGreen, { cwd }).allow, true);
 });
 
-test("path-bound green blocks out-of-scope writes and mutating bash", () => {
-  const state = { mode: "green", scope: "auth", scopeEnforcement: "path-bound", allowedPaths: ["src/auth.js"] };
-  assert.equal(evaluateToolCall({ toolName: "edit", input: { path: "/repo/src/auth.js" } }, state, { cwd }).allow, true);
-  assert.equal(evaluateToolCall({ toolName: "edit", input: { path: "/repo/package.json" } }, state, { cwd }).allow, false);
-  assert.equal(evaluateToolCall({ toolName: "bash", input: { command: "node scripts/rewrite.js" } }, state, { cwd }).allow, false);
+test("protected commands stay blocked under semantic Green", () => {
+  for (const command of [
+    "git -C . commit -m done",
+    "git --no-pager push",
+    "npm --prefix . install lodash",
+    "git.exe commit -m done",
+  ]) assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);
+});
+
+test("invalid state denies every non-read-only tool as Red-equivalent", () => {
+  const invalidStates = [
+    {},
+    { mode: "bogus" },
+    { mode: "yellow" },
+    { mode: "yellow", planningPaths: "docs" },
+    { mode: "yellow", planningPaths: [1] },
+    { mode: "green", scopeEnforcement: "semantic" },
+    { mode: "green", scope: "   ", scopeEnforcement: "semantic" },
+    { mode: "green", scope: "auth" },
+    { mode: "green", scope: "auth", scopeEnforcement: "other" },
+    { mode: "green", scope: "auth", scopeEnforcement: "path-bound" },
+    { mode: "green", scope: "auth", scopeEnforcement: "path-bound", allowedPaths: [] },
+    { mode: "green", scope: "auth", scopeEnforcement: "path-bound", allowedPaths: [""] },
+    { mode: "green", scope: "auth", scopeEnforcement: "path-bound", allowedPaths: ["src", 1] },
+  ];
+
+  for (const state of invalidStates) {
+    assert.equal(evaluateToolCall({ toolName: "write", input: { path: "/repo/src/auth.js" } }, state, { cwd }).allow, false);
+    assert.equal(evaluateToolCall({ toolName: "bash", input: { command: "echo change" } }, state, { cwd }).allow, false);
+    assert.equal(evaluateToolCall({ toolName: "subagent", input: {} }, state, { cwd }).allow, false);
+  }
+});
+
+test("read-only tools remain available when state is invalid", () => {
+  assert.equal(evaluateToolCall({ toolName: "read", input: { path: "/repo/a" } }, {}, { cwd }).allow, true);
+});
+
+test("valid Red, Yellow, and Green behavior stays intact", () => {
+  assert.equal(evaluateToolCall({ toolName: "write", input: { path: "/repo/src/auth.js" } }, red, { cwd }).allow, false);
+  assert.equal(evaluateToolCall({ toolName: "bash", input: { command: "git status --short" } }, red, { cwd }).allow, true);
+
+  assert.equal(evaluateToolCall({ toolName: "write", input: { path: "/repo/docs/plans/auth.md" } }, yellow, { cwd }).allow, true);
+  assert.equal(evaluateToolCall({ toolName: "edit", input: { path: "/repo/src/auth.js" } }, yellow, { cwd }).allow, false);
+
+  assert.equal(evaluateToolCall({ toolName: "edit", input: { path: "/repo/src/auth.js" } }, pathGreen, { cwd }).allow, true);
+  assert.equal(evaluateToolCall({ toolName: "edit", input: { path: "/repo/package.json" } }, pathGreen, { cwd }).allow, false);
+  assert.equal(evaluateToolCall({ toolName: "bash", input: { command: "node scripts/rewrite.js" } }, pathGreen, { cwd }).allow, false);
+  assert.equal(evaluateToolCall({ toolName: "subagent", input: {} }, semanticGreen, { cwd }).allow, true);
+});
+
+test("apply_patch is unclassified and denied for both Green modes", () => {
+  const event = { toolName: "apply_patch", input: { path: "/repo/src/auth.js" } };
+  assert.equal(evaluateToolCall(event, semanticGreen, { cwd }).allow, false);
+  assert.equal(evaluateToolCall(event, pathGreen, { cwd }).allow, false);
 });
 
 test("unknown custom tools fail closed", () => {
-  assert.equal(evaluateToolCall({ toolName: "mystery_mutator", input: {} }, { mode: "green", scopeEnforcement: "semantic" }, { cwd }).allow, false);
+  assert.equal(evaluateToolCall({ toolName: "mystery_mutator", input: {} }, semanticGreen, { cwd }).allow, false);
 });
