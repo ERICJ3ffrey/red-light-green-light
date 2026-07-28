@@ -19,6 +19,10 @@
   "engines": {
     "node": ">=22"
   },
+  "files": [
+    ".pi/extensions/",
+    "skills/"
+  ],
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"
   },
