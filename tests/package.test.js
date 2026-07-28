@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
+import { validateSkillText } from "../scripts/validate-package.mjs";
+
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 test("package declares Pi skill and extension resources", () => {
@@ -24,4 +26,19 @@ test("canonical skill frontmatter is portable", () => {
   assert.match(text, /\nname: red-light-green-light\n/);
   assert.match(text, /\ndescription: .+\n/);
   assert.match(text, /\n---\n/);
+});
+
+test("skill validation ignores metadata after closed frontmatter", () => {
+  const errors = validateSkillText(`---\n---\nname: red-light-green-light\ndescription: misplaced\n`);
+
+  assert.ok(errors.includes("SKILL.md name mismatch"));
+  assert.ok(errors.includes("SKILL.md description missing"));
+});
+
+test("skill validation rejects frontmatter after leading prose", () => {
+  const errors = validateSkillText(
+    `leading prose\n---\nname: red-light-green-light\ndescription: misplaced\n---\n`,
+  );
+
+  assert.ok(errors.includes("SKILL.md missing bounded frontmatter"));
 });
