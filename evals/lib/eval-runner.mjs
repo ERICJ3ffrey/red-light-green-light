@@ -1,13 +1,17 @@
 import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import {
+  closeSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
+  openSync,
   readFileSync,
   readdirSync,
   realpathSync,
   rmSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -85,9 +89,41 @@ export function buildRpcInvocation({ withSkill, skillPath, platform = process.pl
   };
 }
 
+export function acquireEvaluationLock() {
+  const temporaryRoot = tmpdir();
+  const lockPath = join(temporaryRoot, 'red-light-green-light-evaluation.lock');
+  let descriptor;
+  try {
+    descriptor = openSync(lockPath, 'wx');
+    writeFileSync(descriptor, `${process.pid}\n`);
+  } catch (error) {
+    if (error?.code === 'EEXIST') {
+      throw new Error(`Another evaluation is active (${lockPath}). Run cases sequentially.`);
+    }
+    throw error;
+  }
+
+  for (const entry of readdirSync(temporaryRoot)) {
+    if (entry.startsWith('red-light-green-light-') && entry !== 'red-light-green-light-evaluation.lock') {
+      rmSync(join(temporaryRoot, entry), { recursive: true, force: true });
+    }
+  }
+
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    closeSync(descriptor);
+    try {
+      unlinkSync(lockPath);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+  };
+}
+
 export function createFixture({ caseId, evalCase, variant }) {
-  const fixture = join(tmpdir(), `red-light-green-light-${variant}-${caseId}`);
-  rmSync(fixture, { recursive: true, force: true });
+  const fixture = mkdtempSync(join(tmpdir(), `red-light-green-light-${variant}-${caseId}-`));
   mkdirSync(join(fixture, 'src'), { recursive: true });
   mkdirSync(join(fixture, 'docs', 'plans'), { recursive: true });
   mkdirSync(join(fixture, 'tests'), { recursive: true });

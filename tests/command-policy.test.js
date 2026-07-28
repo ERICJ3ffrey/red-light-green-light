@@ -151,6 +151,11 @@ test("protected classification blocks practical dynamic-dispatch bypasses under 
     "g\\\nit commit -m x",
     "env NODE_OPTIONS=--require=./hook.js node script.js",
     "node --test-reporter=./hook.mjs --test",
+    "! git commit -m x",
+    "{ git commit -m x; }",
+    "if git commit -m x; then :; fi",
+    "{git,commit,-m,x}",
+    "/usr/bin/g?t commit -m x",
   ]) {
     assert.equal(isProtectedCommand(command), true, command);
     assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);
@@ -175,7 +180,21 @@ test("protected classification finds family actions after global options", () =>
     "kubectl --namespace default delete pod app",
     "terraform -chdir=. destroy",
     "docker --context default push image",
-  ]) assert.equal(isProtectedCommand(command), true, command);
+    "git clean -fdx",
+    "git remote set-url origin x",
+    "git config user.email x@example.com",
+    "npm config set registry https://example.com",
+    "pip config set global.index-url https://example.com",
+    "kubectl create namespace x",
+    "terraform state rm resource.x",
+    "docker rm container",
+  ]) {
+    assert.equal(isProtectedCommand(command), true, command);
+    assert.equal(evaluateToolCall({ toolName: "bash", input: { command } }, semanticGreen, { cwd }).allow, false, command);
+  }
+  for (const command of ["git status --short", "git config --get user.email", "npm view lodash version"]) {
+    assert.equal(isProtectedCommand(command), false, command);
+  }
 });
 
 test("protected classification fails closed on malformed or unknown family syntax", () => {

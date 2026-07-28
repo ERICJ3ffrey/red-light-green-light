@@ -15,6 +15,7 @@ test("package declares Pi skill and extension resources", () => {
   assert.ok(pkg.keywords.includes("pi-package"));
   assert.deepEqual(pkg.pi.skills, ["./skills"]);
   assert.deepEqual(pkg.pi.extensions, ["./.pi/extensions/red-light-green-light.ts"]);
+  assert.equal(pkg.scripts["acceptance:pi"], "node tests/acceptance/pi/run-acceptance.mjs");
 });
 
 test("package limits distributed files to runtime resources", () => {
@@ -96,4 +97,6 @@ test("README documents Pi install, commands, and enforcement limits", () => {
   assert.match(text, /instruction guarded/i);
   assert.match(text, /not an OS sandbox/i);
   assert.match(text, /concurrent external/i);
+  assert.match(text, /remain blocked even in Green/i);
+  assert.match(text, /separate user-controlled channel/i);
 });

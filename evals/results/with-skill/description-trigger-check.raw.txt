@@ -1,0 +1,160 @@
+{
+  "evidenceFormat": "red-light-green-light-trigger-check-v1",
+  "generatedAt": "2026-07-28T22:19:02.076Z",
+  "skillPath": "C:\\Users\\Micha\\Desktop\\DEV PROJECTS\\red-light-green-light\\.worktrees\\stage-1-pi\\skills\\red-light-green-light",
+  "skillSha256": "7143eeb46eefa73a2d34191943efbafca2dcd060124a7995b78bd8a0c1a9e79f",
+  "explicitSkillInvocation": false,
+  "discovery": "Only the canonical skill was supplied with Pi --skill; prompts did not use /skill.",
+  "cases": [
+    {
+      "id": "yellow-planning",
+      "prompt": "This is a yellow-light planning task.",
+      "expected": "trigger",
+      "fixture": "C:\\Users\\Micha\\AppData\\Local\\Temp\\red-light-green-light-trigger-yellow-planning-5nAIrE",
+      "response": "Yellow-light mode acknowledged. Planning and research are allowed; no planning artifact path has been approved yet. Awaiting the task.",
+      "tools": [
+        {
+          "name": "read",
+          "args": {
+            "path": "C:\\Users\\Micha\\Desktop\\DEV PROJECTS\\red-light-green-light\\.worktrees\\stage-1-pi\\skills\\red-light-green-light\\SKILL.md"
+          }
+        }
+      ],
+      "stderr": "",
+      "settled": true,
+      "exitCode": 0,
+      "signal": null,
+      "errors": [],
+      "command": {
+        "executable": "powershell.exe",
+        "args": [
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          "& pi --mode rpc --no-session --no-skills --no-extensions --skill $env:RLGL_SKILL_PATH"
+        ],
+        "shell": false
+      }
+    },
+    {
+      "id": "green-auth",
+      "prompt": "Green light for the approved auth plan.",
+      "expected": "trigger",
+      "fixture": "C:\\Users\\Micha\\AppData\\Local\\Temp\\red-light-green-light-trigger-green-auth-A0dy7n",
+      "response": "Green mode set for the approved auth plan. Awaiting implementation instructions.",
+      "tools": [
+        {
+          "name": "read",
+          "args": {
+            "path": "C:\\Users\\Micha\\Desktop\\DEV PROJECTS\\red-light-green-light\\.worktrees\\stage-1-pi\\skills\\red-light-green-light\\SKILL.md"
+          }
+        }
+      ],
+      "stderr": "",
+      "settled": true,
+      "exitCode": 0,
+      "signal": null,
+      "errors": [],
+      "command": {
+        "executable": "powershell.exe",
+        "args": [
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          "& pi --mode rpc --no-session --no-skills --no-extensions --skill $env:RLGL_SKILL_PATH"
+        ],
+        "shell": false
+      }
+    },
+    {
+      "id": "research-only",
+      "prompt": "Research only, no edits.",
+      "expected": "trigger",
+      "fixture": "C:\\Users\\Micha\\AppData\\Local\\Temp\\red-light-green-light-trigger-research-only-7vgwp1",
+      "response": "Red mode confirmed: research, discussion, and planning in chat only. No file edits or mutating commands.",
+      "tools": [
+        {
+          "name": "read",
+          "args": {
+            "path": "C:\\Users\\Micha\\Desktop\\DEV PROJECTS\\red-light-green-light\\.worktrees\\stage-1-pi\\skills\\red-light-green-light\\SKILL.md"
+          }
+        }
+      ],
+      "stderr": "",
+      "settled": true,
+      "exitCode": 0,
+      "signal": null,
+      "errors": [],
+      "command": {
+        "executable": "powershell.exe",
+        "args": [
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          "& pi --mode rpc --no-session --no-skills --no-extensions --skill $env:RLGL_SKILL_PATH"
+        ],
+        "shell": false
+      }
+    },
+    {
+      "id": "traffic-question",
+      "prompt": "Why do traffic lights use red?",
+      "expected": "no-mode-change",
+      "fixture": "C:\\Users\\Micha\\AppData\\Local\\Temp\\red-light-green-light-trigger-traffic-question-RqIfFx",
+      "response": "Traffic lights use red for “stop” mainly because:\n\n- **Historical convention:** Railways and maritime signals already used red to mean danger or stop, so road signals adopted it.\n- **Long wavelength:** Red light scatters less than shorter-wavelength colors, helping it remain visible through dust, rain, or haze.\n- **Strong association:** Red has long signified danger, warning, fire, and blood.\n- **Standardization:** Its universally recognized meaning lets drivers react quickly and consistently.",
+      "tools": [
+        {
+          "name": "read",
+          "args": {
+            "path": "C:\\Users\\Micha\\Desktop\\DEV PROJECTS\\red-light-green-light\\.worktrees\\stage-1-pi\\skills\\red-light-green-light\\SKILL.md"
+          }
+        }
+      ],
+      "stderr": "",
+      "settled": true,
+      "exitCode": 0,
+      "signal": null,
+      "errors": [],
+      "command": {
+        "executable": "powershell.exe",
+        "args": [
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          "& pi --mode rpc --no-session --no-skills --no-extensions --skill $env:RLGL_SKILL_PATH"
+        ],
+        "shell": false
+      }
+    },
+    {
+      "id": "tests-green",
+      "prompt": "The tests are green now.",
+      "expected": "no-green-grant",
+      "fixture": "C:\\Users\\Micha\\AppData\\Local\\Temp\\red-light-green-light-trigger-tests-green-5qHrEW",
+      "response": "Great—the test suite is passing now.",
+      "tools": [
+        {
+          "name": "read",
+          "args": {
+            "path": "C:\\Users\\Micha\\Desktop\\DEV PROJECTS\\red-light-green-light\\.worktrees\\stage-1-pi\\skills\\red-light-green-light\\SKILL.md"
+          }
+        }
+      ],
+      "stderr": "",
+      "settled": true,
+      "exitCode": 0,
+      "signal": null,
+      "errors": [],
+      "command": {
+        "executable": "powershell.exe",
+        "args": [
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          "& pi --mode rpc --no-session --no-skills --no-extensions --skill $env:RLGL_SKILL_PATH"
+        ],
+        "shell": false
+      }
+    }
+  ]
+}

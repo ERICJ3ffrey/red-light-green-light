@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -7,7 +8,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const acceptanceDir = dirname(fileURLToPath(import.meta.url));
-const packageRoot = resolve(acceptanceDir, '..', '..', '..');
+const sourcePackageRoot = resolve(acceptanceDir, '..', '..', '..');
 const fixture = join(tmpdir(), 'red-light-green-light-acceptance');
 const supportDir = join(tmpdir(), 'red-light-green-light-acceptance-support');
 const mutatorPath = join(supportDir, 'mystery-mutator.ts');
@@ -44,6 +45,39 @@ function git(args) {
 git(['init']);
 git(['add', 'src/value.js']);
 git(['-c', 'user.name=Acceptance', '-c', 'user.email=acceptance@example.com', 'commit', '-m', 'baseline']);
+
+const packed = spawnSync('npm', ['pack', '--pack-destination', supportDir, '--json'], {
+  cwd: sourcePackageRoot,
+  encoding: 'utf8',
+  shell: false,
+});
+if (packed.status !== 0) throw new Error(`npm pack failed: ${packed.stderr}`);
+const packedRecord = JSON.parse(packed.stdout)[0];
+const tarballPath = join(supportDir, packedRecord.filename);
+const extractedRoot = join(supportDir, 'extracted');
+mkdirSync(extractedRoot, { recursive: true });
+const extracted = spawnSync('tar', ['-xzf', tarballPath, '-C', extractedRoot], {
+  encoding: 'utf8',
+  shell: false,
+});
+if (extracted.status !== 0) throw new Error(`tar extraction failed: ${extracted.stderr}`);
+const packageRoot = join(extractedRoot, 'package');
+const packageMetadata = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8'));
+const sourceCommit = spawnSync('git', ['rev-parse', 'HEAD'], {
+  cwd: sourcePackageRoot,
+  encoding: 'utf8',
+  shell: false,
+}).stdout.trim();
+const sourceStatus = spawnSync('git', ['status', '--short'], {
+  cwd: sourcePackageRoot,
+  encoding: 'utf8',
+  shell: false,
+}).stdout;
+const piVersionResult = process.platform === 'win32'
+  ? spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', '& pi --version'], { encoding: 'utf8', shell: false })
+  : spawnSync('pi', ['--version'], { encoding: 'utf8', shell: false });
+const piVersion = (piVersionResult.stdout || piVersionResult.stderr).trim();
+const tarballSha256 = createHash('sha256').update(readFileSync(tarballPath)).digest('hex');
 
 const steps = [
   { id: 'status-red', kind: 'command', message: '/light status' },
@@ -279,7 +313,7 @@ writeFileSync(join(acceptanceDir, 'diff.txt'), diff);
 writeFileSync(
   join(acceptanceDir, 'commands.txt'),
   [
-    `pi --mode rpc --no-session --no-skills -e ${packageRoot} -e ${mutatorPath}`,
+    `pi --mode rpc --no-session --no-skills -e ${JSON.stringify(packageRoot)} -e ${JSON.stringify(mutatorPath)}`,
     ...steps.map((step) => step.message),
   ].join('\n') + '\n',
 );
@@ -288,7 +322,7 @@ function block(text) {
   return text ? `\n\`\`\`text\n${text.replace(/\n$/, '')}\n\`\`\`\n` : '\n_None._\n';
 }
 
-const session = `# Pi Acceptance Session\n\n- Fixture: \`${fixture}\`\n- Package: \`${packageRoot}\`\n- Transport: Pi RPC with no persisted session and no unrelated skills\n- Process exit: ${exit.code}; signal: ${exit.signal || 'none'}\n- Stderr: ${stderr ? `\n\n\`\`\`text\n${stderr}\n\`\`\`` : 'none'}\n\n## Assertions\n\n${assertions.map((item) => `- ${item.pass ? 'PASS' : 'FAIL'} — ${item.name}`).join('\n')}\n\n## Transcript\n\n${results.map((result) => `### ${result.id}\n\n**User**${block(result.message)}\n**Notifications**${block(result.notices.join('\n'))}\n**Assistant**${block(result.assistant)}\n**Tools**\n\n${result.tools.length ? result.tools.map((tool) => `- ${tool.type}: \`${tool.name}\`${tool.isError === undefined ? '' : `; error=${tool.isError}`}`).join('\n') : '_None._'}\n\n**Snapshot**\n\n\`\`\`json\n${JSON.stringify(result.snapshot, null, 2)}\n\`\`\`\n`).join('\n')}\n## Final Git Status\n\n\`\`\`text\n${diff || '(clean)\n'}\`\`\`\n\n## Result\n\n${failure ? `FAIL — ${failure}` : 'PASS'}\n`;
+const session = `# Pi Acceptance Session\n\n- Fixture: \`${fixture}\`\n- Source commit: \`${sourceCommit}\`\n- Source status before pack: ${sourceStatus ? `\n\n\`\`\`text\n${sourceStatus}\`\`\`` : 'clean'}\n- Package version: \`${packageMetadata.version}\`\n- Packed artifact: \`${packedRecord.filename}\`\n- Tarball SHA-256: \`${tarballSha256}\`\n- Extracted package under test: \`${packageRoot}\`\n- Pi version: \`${piVersion}\`\n- Transport: Pi RPC with no persisted session and no unrelated skills\n- Process exit: ${exit.code}; signal: ${exit.signal || 'none'}\n- Stderr: ${stderr ? `\n\n\`\`\`text\n${stderr}\n\`\`\`` : 'none'}\n\n## Assertions\n\n${assertions.map((item) => `- ${item.pass ? 'PASS' : 'FAIL'} — ${item.name}`).join('\n')}\n\n## Transcript\n\n${results.map((result) => `### ${result.id}\n\n**User**${block(result.message)}\n**Notifications**${block(result.notices.join('\n'))}\n**Assistant**${block(result.assistant)}\n**Tools**\n\n${result.tools.length ? result.tools.map((tool) => `- ${tool.type}: \`${tool.name}\`${tool.isError === undefined ? '' : `; error=${tool.isError}`}`).join('\n') : '_None._'}\n\n**Snapshot**\n\n\`\`\`json\n${JSON.stringify(result.snapshot, null, 2)}\n\`\`\`\n`).join('\n')}\n## Final Git Status\n\n\`\`\`text\n${diff || '(clean)\n'}\`\`\`\n\n## Result\n\n${failure ? `FAIL — ${failure}` : 'PASS'}\n`;
 writeFileSync(join(acceptanceDir, 'session.md'), session);
 
 console.log(session);

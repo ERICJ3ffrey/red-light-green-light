@@ -20,6 +20,10 @@ The harness loads the protocol automatically but cannot intercept every tool. Th
 
 The harness discovers the skill on demand. This does not provide always-on startup activation.
 
+## Protected actions in Stage 1 Pi
+
+The native Pi adapter does not encode one-off approvals for protected shell actions. Recognized commits, pushes, dependency operations, deployments, and other protected families remain blocked in every light. An approved protected action must use a separate user-controlled channel.
+
 ## Stage 1 threat model
 
 Stage 1 mediates agent-issued Pi tool calls in the current session. Its mechanical target and command restrictions are not an OS sandbox or an atomic check-and-use filesystem authorization. Concurrent filesystem mutation by an external actor or compromised extension is outside the Stage 1 threat model.

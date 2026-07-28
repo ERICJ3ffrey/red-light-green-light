@@ -1,5 +1,5 @@
-import { realpathSync } from "node:fs";
-import { dirname, extname, isAbsolute, relative, resolve, sep } from "node:path";
+import { lstatSync, realpathSync } from "node:fs";
+import { basename, dirname, extname, isAbsolute, relative, resolve, sep } from "node:path";
 
 const PLAN_EXTENSIONS = new Set([".md", ".txt", ".json", ".yaml", ".yml"]);
 const PLAN_NAME = /(plan|spec|design|review|checklist|handoff|contract|notes?)/i;
@@ -19,6 +19,11 @@ function canonical(path) {
       return resolve(existing, ...remainder.reverse());
     } catch (error) {
       if (error?.code !== "ENOENT" && error?.code !== "ENOTDIR") return null;
+      try {
+        if (lstatSync(candidate).isSymbolicLink()) return null;
+      } catch (statError) {
+        if (statError?.code !== "ENOENT" && statError?.code !== "ENOTDIR") return null;
+      }
       const parent = dirname(candidate);
       if (parent === candidate) return null;
       remainder.push(candidate.slice(parent.length).replace(/^[\\/]+/, ""));
@@ -46,7 +51,8 @@ export function buildPlanningRoots(cwd, explicit = []) {
     // Authorization reflects filesystem state at evaluation time; Task 8 documents the external TOCTOU residual.
     const escapedRelativeRoot = !root.absoluteExplicit
       && (!canonicalCwd || !path || !inside(path, canonicalCwd));
-    return { ...root, path: escapedRelativeRoot ? null : path };
+    const overlyBroadRoot = root.explicit && !root.exact && canonicalCwd && path === canonicalCwd;
+    return { ...root, path: escapedRelativeRoot || overlyBroadRoot ? null : path };
   });
 }
 
@@ -62,8 +68,10 @@ export function isAllowedPlanningWrite(inputPath, roots) {
     if (!canonicalRoot) return false;
     const matches = root.exact ? path === canonicalRoot : inside(path, canonicalRoot);
     if (!matches) return false;
-    if (!root.explicit || !root.exact) return true;
-    return PLAN_NAME.test(root.path.split(/[\\/]/).pop() || "");
+    const planningSignal = [basename(canonicalRoot), relative(canonicalRoot, path)]
+      .filter(Boolean)
+      .join("/");
+    return PLAN_NAME.test(planningSignal);
   });
 }
 

@@ -61,7 +61,7 @@ Unknown custom tools fail closed. Add an explicit classification before using th
 
 ## Protected actions
 
-Green does not automatically approve deployments, publishing, external sends, purchases, dependency installation, destructive operations, commits, pushes, or credential or configuration changes. Recognized protected command families and dynamic dispatch wrappers are blocked.
+Green does not approve deployments, publishing, external sends, purchases, dependency installation, destructive operations, commits, pushes, or credential or configuration changes. The Stage 1 Pi adapter has no in-agent override for these gates: recognized protected command families and dynamic dispatch wrappers remain blocked even in Green. Perform an approved protected action through a separate user-controlled channel.
 
 ## Stage 1 threat model
 
@@ -80,7 +80,10 @@ The canonical skill lives at `skills/red-light-green-light/SKILL.md`. Harnesses 
 ```bash
 npm test
 npm run validate
+npm run acceptance:pi
 ```
+
+The acceptance command packs the current source, extracts the tarball into a disposable directory, and runs clean-profile Pi checks against the extracted package rather than the worktree.
 
 The pressure-test runners use fresh Pi RPC sessions and preserve separate authority-initialization and evaluated user turns:
 

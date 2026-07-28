@@ -16,11 +16,14 @@ function withSymlinkFixture(t) {
   mkdirSync(join(repo, "scope"), { recursive: true });
   mkdirSync(outside, { recursive: true });
   const outsideFile = join(outside, "victim.md");
+  const outsideMissing = join(outside, "missing.md");
   writeFileSync(outsideFile, "outside");
 
   try {
     symlinkSync(outsideFile, join(repo, "docs", "file-link.md"), "file");
     symlinkSync(outsideFile, join(repo, "scope", "file-link.md"), "file");
+    symlinkSync(outsideMissing, join(repo, "docs", "dangling-link.md"), "file");
+    symlinkSync(outsideMissing, join(repo, "scope", "dangling-link.md"), "file");
     symlinkSync(outside, join(repo, "docs", "parent-link"), "dir");
     symlinkSync(outside, join(repo, "scope", "parent-link"), "dir");
     symlinkSync(outside, join(repo, "scope-link"), "dir");
@@ -40,10 +43,20 @@ test("default planning roots accept markdown planning files", () => {
   assert.equal(isAllowedPlanningWrite("/repo/.superpowers/brainstorm/auth-design.md", roots), true);
 });
 
-test("yellow rejects production and test files", () => {
+test("yellow rejects production, tests, and non-planning data files", () => {
   const roots = buildPlanningRoots(cwd, []);
   assert.equal(isAllowedPlanningWrite("/repo/src/auth.js", roots), false);
   assert.equal(isAllowedPlanningWrite("/repo/tests/auth.test.js", roots), false);
+  assert.equal(isAllowedPlanningWrite("/repo/docs/config.json", roots), false);
+  assert.equal(isAllowedPlanningWrite("/repo/docs/settings.yaml", roots), false);
+  assert.equal(isAllowedPlanningWrite("/repo/docs/README.md", roots), false);
+  assert.equal(isAllowedPlanningWrite("/repo/docs/plans/config.json", roots), true);
+});
+
+test("yellow rejects an overly broad explicit project root", () => {
+  const roots = buildPlanningRoots(cwd, ["."]);
+  assert.equal(isAllowedPlanningWrite("/repo/package.json", roots), false);
+  assert.equal(isAllowedPlanningWrite("/repo/notes/auth-plan.md", roots), false);
 });
 
 test("explicit outside-root planning file must look like a planning artifact", () => {
@@ -76,6 +89,13 @@ test("Yellow planning roots deny symlinked-parent nonexistent-target escapes", (
   if (!fixture) return;
   const roots = buildPlanningRoots(fixture.repo, []);
   assert.equal(isAllowedPlanningWrite(join(fixture.repo, "docs", "parent-link", "new-plan.md"), roots), false);
+});
+
+test("Yellow planning roots deny dangling file-symlink escapes", (t) => {
+  const fixture = withSymlinkFixture(t);
+  if (!fixture) return;
+  const roots = buildPlanningRoots(fixture.repo, []);
+  assert.equal(isAllowedPlanningWrite(join(fixture.repo, "docs", "dangling-link.md"), roots), false);
 });
 
 test("Yellow denies default and relative explicit roots that directly symlink outside cwd", (t) => {
@@ -112,6 +132,12 @@ test("path-bound Green denies symlinked-parent nonexistent-target escapes", (t) 
   const fixture = withSymlinkFixture(t);
   if (!fixture) return;
   assert.equal(isAllowedScopedWrite(join(fixture.repo, "scope", "parent-link", "new.md"), fixture.repo, ["scope"]), false);
+});
+
+test("path-bound Green denies dangling file-symlink escapes", (t) => {
+  const fixture = withSymlinkFixture(t);
+  if (!fixture) return;
+  assert.equal(isAllowedScopedWrite(join(fixture.repo, "scope", "dangling-link.md"), fixture.repo, ["scope"]), false);
 });
 
 test("path-bound Green denies a relative allowlist root that directly symlinks outside cwd", (t) => {

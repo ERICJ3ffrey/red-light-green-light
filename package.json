@@ -34,7 +34,8 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "validate": "node scripts/validate-package.mjs"
+    "validate": "node scripts/validate-package.mjs",
+    "acceptance:pi": "node tests/acceptance/pi/run-acceptance.mjs"
   },
   "pi": {
     "extensions": ["./.pi/extensions/red-light-green-light.ts"],

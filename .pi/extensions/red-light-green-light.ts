@@ -74,22 +74,6 @@ export default function redLightGreenLight(pi: ExtensionAPI): void {
     ctx.ui.notify(`Light set to ${next.mode}.`, "info");
   }
 
-  pi.registerCommand("light", {
-    description: "Set authority: red | yellow [planning-path] | green <scope> [--paths a,b] | status",
-    handler: async (args, ctx) => {
-      const parsed = parseLightArgs(args);
-      if (!parsed.ok) {
-        ctx.ui.notify(parsed.error, "warning");
-        return;
-      }
-      if (parsed.status) {
-        ctx.ui.notify(renderAuthorityContext(state), "info");
-        return;
-      }
-      transition(parsed.transition as Record<string, unknown>, ctx);
-    },
-  });
-
   pi.on("session_start", async (_event, ctx) => {
     toolsBeforeRed = pi.getActiveTools();
     pendingRelease = undefined;
@@ -123,6 +107,23 @@ export default function redLightGreenLight(pi: ExtensionAPI): void {
 
   pi.on("input", async (event, ctx) => {
     if (event.source !== "interactive" && event.source !== "rpc") return { action: "continue" as const };
+
+    const slashMatch = event.text.replace(/\r\n/g, "\n").match(/^\/light(?:\s+([^\n]*))?(?:\n([\s\S]*))?$/i);
+    if (slashMatch) {
+      const parsedArgs = parseLightArgs(slashMatch[1] || "");
+      if (!parsedArgs.ok) {
+        ctx.ui.notify(parsedArgs.error, "warning");
+        return { action: "handled" as const };
+      }
+      if (parsedArgs.status) {
+        ctx.ui.notify(renderAuthorityContext(state), "info");
+        return { action: "handled" as const };
+      }
+      transition(parsedArgs.transition as Record<string, unknown>, ctx);
+      const task = (slashMatch[2] || "").trim();
+      return task ? { action: "transform" as const, text: task } : { action: "handled" as const };
+    }
+
     const parsed = parseTransitionMessage(event.text);
     if (!parsed) return { action: "continue" as const };
     transition(parsed.transition as Record<string, unknown>, ctx);

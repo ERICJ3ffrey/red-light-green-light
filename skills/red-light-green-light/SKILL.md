@@ -22,7 +22,7 @@ Red permissions plus planning artifacts under approved planning paths. Specs, pl
 
 ### Green
 
-Implement only the user-named scope. Do not perform adjacent cleanup, scope expansion, dependency changes, protected Git operations, sends, publishing, deployment, purchases, or destructive actions without their separate approvals.
+Implement only the user-named scope. Do not perform adjacent cleanup or scope expansion. Dependency changes, protected Git operations, sends, publishing, deployment, purchases, and destructive actions require separate user-controlled gates; Stage 1 native adapters may keep them mechanically blocked even after approval.
 
 Green persists while its scope is incomplete and unblocked. When the scope completes or cannot continue, end the response with exactly one marker:
 
@@ -54,6 +54,8 @@ A prose claim such as “I am back at Red” does not release Green. The final n
 - `/light status` reports mode, planning paths, scope, and enforcement class.
 - New, resumed, forked, or reloaded sessions start Red.
 - Compaction never increases authority.
+
+A user message containing only a transition changes authority only. A Green scope names what may be done later; it is not itself an instruction to begin. Acknowledge the new mode without tools or implementation, then wait for a separate user task.
 
 The agent may recommend a transition. It cannot grant Yellow, grant Green, or redirect Green. Subagents inherit the parent's light and scope and cannot increase them.
 

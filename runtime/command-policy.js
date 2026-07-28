@@ -34,7 +34,8 @@ const PACKAGE_KNOWN = new Set([
 const UNCONDITIONAL_WRAPPERS = new Set([
   "sh", "bash", "zsh", "dash", "ksh", "ash", "fish", "csh", "tcsh",
   "cmd", "powershell", "pwsh", "eval", "exec", "xargs", "find", "sudo", "env",
-  "busybox", "toybox", "time", "nice", "timeout", "setsid", "bunx", "pnpx"
+  "busybox", "toybox", "time", "nice", "timeout", "setsid", "bunx", "pnpx",
+  "if", "then", "fi", "case", "esac", "for", "while", "until", "do", "done", "function", "select", "coproc"
 ]);
 
 function executableName(value) {
@@ -73,7 +74,7 @@ function tokenizeShell(command) {
       continue;
     }
 
-    if (char === "$") return null;
+    if (char === "$" || "!{}?*[]".includes(char)) return null;
     if (char === "'" || char === '"') {
       quote = char;
       wordStarted = true;
@@ -194,9 +195,9 @@ function classifyProtectedSegment(words, depth = 0) {
   const executable = executableName(words[0]);
   const actionTokens = words.slice(1).map((word) => word.toLowerCase());
   if (UNCONDITIONAL_WRAPPERS.has(executable) || executable === "npx") return true;
-  if (executable === "git") return gitInvocation(words).protected;
-  if (executable === "npm" || executable === "pnpm" || executable === "yarn") return packageInvocation(words).protected;
-  if (executable === "pip" || executable === "pip3") return actionTokens.some((word) => word === "install" || word === "uninstall");
+  if (executable === "git") return !safeGit(words);
+  if (executable === "npm" || executable === "pnpm" || executable === "yarn") return !safePackage(words);
+  if (executable === "pip" || executable === "pip3") return true;
   if (executable === "node") {
     return actionTokens.some((word) => ["-e", "--eval", "-p", "--print", "-r", "--require", "--import", "--run", "--loader", "--experimental-loader", "--test-reporter", "--test-reporter-destination"].includes(word)
       || /^-(?:e|p|r).+/.test(word)
@@ -205,10 +206,7 @@ function classifyProtectedSegment(words, depth = 0) {
   if (executable === "python" || executable === "python3") {
     return actionTokens.some((word) => /^-[^-]*[cm]/.test(word));
   }
-  if (executable === "vercel" || executable === "netlify") return actionTokens.includes("deploy");
-  if (executable === "kubectl") return actionTokens.some((word) => word === "apply" || word === "delete");
-  if (executable === "terraform") return actionTokens.some((word) => word === "apply" || word === "destroy");
-  if (executable === "docker") return actionTokens.includes("push");
+  if (["vercel", "netlify", "kubectl", "terraform", "docker"].includes(executable)) return true;
 
   if (executable === "env") {
     let index = 1;
@@ -343,7 +341,7 @@ export function evaluateToolCall(event, state, options) {
 
   if (toolName === "bash") {
     const command = String(input.command || "");
-    if (isProtectedCommand(command)) return { allow: false, reason: "Protected command requires separate approval." };
+    if (isProtectedCommand(command)) return { allow: false, reason: "Protected command is blocked by the Stage 1 adapter; use a separate user-controlled channel." };
     if (state.mode === "red" || state.mode === "yellow" || state.scopeEnforcement === "path-bound") {
       return isReadOnlyCommand(command)
         ? { allow: true }

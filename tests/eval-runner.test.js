@@ -15,6 +15,7 @@ import {
 const helper = readFileSync(new URL('../evals/lib/eval-runner.mjs', import.meta.url), 'utf8');
 const baseline = readFileSync(new URL('../evals/run-baseline.mjs', import.meta.url), 'utf8');
 const withSkill = readFileSync(new URL('../evals/run-with-skill.mjs', import.meta.url), 'utf8');
+const triggerCheck = readFileSync(new URL('../evals/run-trigger-check.mjs', import.meta.url), 'utf8');
 const skill = readFileSync(
   new URL('../skills/red-light-green-light/SKILL.md', import.meta.url),
   'utf8',
@@ -57,6 +58,11 @@ test('runner waits for initialization to settle before sending evaluated turn', 
   assert.match(helper, /phase = 'evaluated';\s*sendPrompt\('evaluated-turn', evaluatedPrompt\)/s);
   assert.match(helper, /settledCount === 2/);
   assert.match(helper, /sendPrompt\('authority-initialization', initializationPrompt\)/);
+  assert.match(helper, /mkdtempSync/);
+  assert.match(baseline, /acquireEvaluationLock\(\)/);
+  assert.match(withSkill, /acquireEvaluationLock\(\)/);
+  assert.match(baseline, /finally\s*{\s*releaseLock\?\.\(\)/s);
+  assert.match(withSkill, /finally\s*{\s*releaseLock\?\.\(\)/s);
 });
 
 test('Green fixture plan is concrete and identical for baseline and with-skill', () => {
@@ -162,6 +168,16 @@ test('runners write complete evidence to distinct raw result directories', () =>
   assert.match(withSkill, /withSkill: true/);
 });
 
+test('description trigger check is reproducible and auditable', () => {
+  assert.match(triggerCheck, /acquireEvaluationLock\(\)/);
+  assert.match(triggerCheck, /--no-session/);
+  assert.match(triggerCheck, /--skill/);
+  assert.match(triggerCheck, /skillSha256/);
+  assert.match(triggerCheck, /description-trigger-check\.raw\.txt/);
+  assert.match(triggerCheck, /description-trigger-check\.md/);
+  assert.doesNotMatch(triggerCheck, /\/skill:/);
+});
+
 test('skill description is cue-focused without promising native always-on loading', () => {
   const description = skill.match(/^description: (.+)$/m)?.[1] ?? '';
   assert.doesNotMatch(description, /start of coding-agent sessions/i);
@@ -174,4 +190,6 @@ test('skill description is cue-focused without promising native always-on loadin
   ]) {
     assert.match(description, new RegExp(cue));
   }
+  assert.match(skill, /message containing only a transition changes authority only/i);
+  assert.match(skill, /wait for a separate user task/i);
 });

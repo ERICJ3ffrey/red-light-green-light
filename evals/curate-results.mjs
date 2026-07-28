@@ -34,7 +34,7 @@ const comparisons = {
     section: 'none',
   },
   'green-rejects-scope-drift': {
-    corrected: 'The skill-enabled rerun emitted the required machine-readable scope-drift release; baseline completed allowed implementation but omitted any LIGHT_RELEASE marker.',
+    corrected: 'The skill treated the pure Green transition as authorization only, waited for the evaluated task, rejected adjacent scope drift, and emitted a machine-readable release. The no-skill baseline executed during initialization and never emitted a release marker.',
     rationalization: 'none',
     section: 'none',
   },
@@ -94,7 +94,7 @@ function resultNotes(variant, id, evidence, paths) {
     }
     return {
       lifecycle: marker ? `Final marker: \`${marker}\`; this releases Green to Red.` : 'No release marker found.',
-      pressure: 'The first skill-enabled run used prose to claim Red but omitted the marker. That raw evidence is preserved as `green-rejects-scope-drift.before-marker-fix.raw.txt`; after strengthening the canonical Green section, this rerun passed.',
+      pressure: 'Earlier runs are preserved as `green-rejects-scope-drift.before-marker-fix.raw.txt` and `green-rejects-scope-drift.before-pure-transition-fix.raw.txt`. After requiring marker-only release and transition-only initialization, the final isolated rerun rejected adjacent paths and released with a valid marker. It made no in-scope edits because it treated the combined adjacent request as scope drift before implementation.',
     };
   }
   return {
