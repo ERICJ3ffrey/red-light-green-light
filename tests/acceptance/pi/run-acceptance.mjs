@@ -67,7 +67,8 @@ const packedRecord = JSON.parse(packed.stdout)[0];
 const tarballPath = join(supportDir, packedRecord.filename);
 const extractedRoot = join(supportDir, 'extracted');
 mkdirSync(extractedRoot, { recursive: true });
-const extracted = spawnSync('tar', ['-xzf', tarballPath, '-C', extractedRoot], {
+const tarExecutable = process.platform === 'win32' ? 'C:\\Windows\\System32\\tar.exe' : 'tar';
+const extracted = spawnSync(tarExecutable, ['-xzf', tarballPath, '-C', extractedRoot], {
   encoding: 'utf8',
   shell: false,
 });
