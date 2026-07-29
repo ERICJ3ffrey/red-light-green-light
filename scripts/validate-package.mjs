@@ -28,10 +28,16 @@ export function parseJsonFile(path) {
 
 export function validateNativeManifests(root) {
   const expectedName = "red-light-green-light";
-  const expectedVersion = "0.2.0";
   const errors = [];
-  const manifests = {};
+  const packageResult = parseJsonFile(resolve(root, "package.json"));
+  errors.push(...packageResult.errors);
+  const expectedVersion = packageResult.value?.version;
+  const hasValidPackageVersion = typeof expectedVersion === "string" && expectedVersion.trim() !== "";
+  if (packageResult.value && !hasValidPackageVersion) {
+    errors.push("package version must be a non-empty string");
+  }
 
+  const manifests = {};
   for (const relative of [
     ".claude-plugin/plugin.json",
     ".claude-plugin/marketplace.json",
@@ -54,7 +60,9 @@ export function validateNativeManifests(root) {
   ]) {
     if (!manifest) continue;
     if (manifest.name !== expectedName) errors.push(`${label} name must be ${expectedName}`);
-    if (manifest.version !== expectedVersion) errors.push(`${label} version must be ${expectedVersion}`);
+    if (hasValidPackageVersion && manifest.version !== expectedVersion) {
+      errors.push(`${label} version must be ${expectedVersion}`);
+    }
   }
 
   for (const [label, marketplace] of [
@@ -68,7 +76,10 @@ export function validateNativeManifests(root) {
     }
   }
 
-  if (claudeMarketplace?.plugins?.[0]?.version !== expectedVersion) {
+  if (
+    hasValidPackageVersion &&
+    claudeMarketplace?.plugins?.[0]?.version !== expectedVersion
+  ) {
     errors.push(`Claude marketplace plugin version must be ${expectedVersion}`);
   }
 

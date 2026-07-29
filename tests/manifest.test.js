@@ -13,6 +13,40 @@ import {
 const packageRoot = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
 const readJson = (relative) => JSON.parse(readFileSync(join(packageRoot, relative), "utf8"));
 
+function createNativeManifestFixture(version) {
+  const root = mkdtempSync(join(tmpdir(), "rlgl-native-manifests-"));
+  for (const relative of [".claude-plugin", ".codex-plugin", ".agents/plugins", "hooks", "skills"]) {
+    mkdirSync(join(root, relative), { recursive: true });
+  }
+  const writeJson = (relative, value) => {
+    writeFileSync(join(root, relative), `${JSON.stringify(value)}\n`);
+  };
+
+  writeJson("package.json", { name: "red-light-green-light", version });
+  writeJson("hooks/hooks.json", {});
+  writeJson(".claude-plugin/plugin.json", {
+    name: "red-light-green-light",
+    version,
+    hooks: "./hooks/hooks.json",
+  });
+  writeJson(".claude-plugin/marketplace.json", {
+    name: "red-light-green-light",
+    plugins: [{ name: "red-light-green-light", version }],
+  });
+  writeJson(".codex-plugin/plugin.json", {
+    name: "red-light-green-light",
+    version,
+    skills: "./skills/",
+    hooks: "./hooks/hooks.json",
+  });
+  writeJson(".agents/plugins/marketplace.json", {
+    name: "red-light-green-light",
+    plugins: [{ name: "red-light-green-light" }],
+  });
+
+  return root;
+}
+
 test("component paths must be package-relative and stay inside the package", () => {
   const root = mkdtempSync(join(tmpdir(), "rlgl-manifest-path-"));
   mkdirSync(join(root, "hooks"));
@@ -116,7 +150,7 @@ test("Codex manifest is rich, text-only, and points to packaged components", () 
   }
 });
 
-test("Codex marketplace installs the main-branch Git source on demand", () => {
+test("Codex marketplace installs the release branch Git source on demand", () => {
   const marketplace = readJson(".agents/plugins/marketplace.json");
   assert.equal(marketplace.name, "red-light-green-light");
   assert.equal(marketplace.interface.displayName, "Red Light Green Light");
@@ -126,7 +160,7 @@ test("Codex marketplace installs the main-branch Git source on demand", () => {
   assert.deepEqual(entry.source, {
     source: "url",
     url: "https://github.com/ERICJ3ffrey/red-light-green-light.git",
-    ref: "main",
+    ref: "master",
   });
   assert.deepEqual(entry.policy, {
     installation: "AVAILABLE",
@@ -137,6 +171,31 @@ test("Codex marketplace installs the main-branch Git source on demand", () => {
 
 test("native manifest validation accepts versions and component paths", () => {
   assert.deepEqual(validateNativeManifests(packageRoot), []);
+});
+
+test("native manifest validation derives the release version from package.json", () => {
+  const root = createNativeManifestFixture("9.8.7");
+
+  assert.deepEqual(validateNativeManifests(root), []);
+});
+
+test("native manifest validation fails closed for missing or invalid package metadata", () => {
+  const missingRoot = mkdtempSync(join(tmpdir(), "rlgl-missing-package-"));
+  assert.match(validateNativeManifests(missingRoot).join("\n"), /missing JSON file: .*package\.json/);
+
+  const invalidJsonRoot = createNativeManifestFixture("0.2.0");
+  writeFileSync(join(invalidJsonRoot, "package.json"), "{ not-json }\n");
+  assert.match(validateNativeManifests(invalidJsonRoot).join("\n"), /invalid JSON in .*package\.json/);
+
+  const missingVersionRoot = createNativeManifestFixture("0.2.0");
+  writeFileSync(
+    join(missingVersionRoot, "package.json"),
+    `${JSON.stringify({ name: "red-light-green-light" })}\n`,
+  );
+  assert.match(
+    validateNativeManifests(missingVersionRoot).join("\n"),
+    /package version must be a non-empty string/,
+  );
 });
 
 test("Claude flat command forwards arguments without copying the protocol", () => {
