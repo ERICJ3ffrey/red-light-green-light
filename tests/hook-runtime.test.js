@@ -364,11 +364,20 @@ test("malformed PreToolUse and event mismatches fail closed, and unknown events 
   for (const payload of [
     { session_id: "malformed", cwd, tool_name: "Write" },
     { session_id: "malformed", cwd, tool_name: "Write", tool_input: {} },
-    { cwd, tool_name: "Write", tool_input: { file_path: "src/a.js" } },
   ]) {
     const result = await handleHook("PreToolUse", payload, env);
+    assert.equal(result.exitCode, 0);
     assert.equal(decisionOf(result), "deny");
   }
+
+  const missingSession = await handleHook("PreToolUse", {
+    cwd,
+    tool_name: "Write",
+    tool_input: { file_path: "src/a.js" },
+  }, env);
+  assert.equal(missingSession.exitCode, 2);
+  assert.equal(decisionOf(missingSession), "deny");
+  assert.match(missingSession.stderr, /blocked|failed closed/i);
 
   const mismatch = await handleHook("PreToolUse", {
     session_id: "malformed",
@@ -394,8 +403,33 @@ test("missing host data, project-local state roots, and save errors fail closed 
     cwd,
     source: "startup",
   }, {});
-  assert.notEqual(noHost.exitCode, 0);
+  assert.equal(noHost.exitCode, 0);
   assert.match(contextOf(noHost), /RED/);
+
+  const failedSubagent = await handleHook("SubagentStart", {
+    session_id: "no-host-subagent",
+    cwd,
+  }, {});
+  assert.equal(failedSubagent.exitCode, 0);
+  assert.match(contextOf(failedSubagent), /RED/);
+
+  const failedStop = await handleHook("Stop", {
+    session_id: "no-host-stop",
+    cwd,
+    last_assistant_message: "LIGHT_RELEASE: complete",
+  }, {});
+  assert.equal(failedStop.exitCode, 0);
+  assert.deepEqual(failedStop.output, {});
+
+  const failedTool = await handleHook("PreToolUse", {
+    session_id: "no-host-tool",
+    cwd,
+    tool_name: "Write",
+    tool_input: { file_path: "src/a.js", content: "x" },
+  }, {});
+  assert.equal(failedTool.exitCode, 2);
+  assert.equal(decisionOf(failedTool), "deny");
+  assert.ok(failedTool.stderr.trim().length > 0);
 
   const projectData = join(cwd, ".plugin-data");
   const local = await handleHook("SessionStart", {
@@ -403,7 +437,7 @@ test("missing host data, project-local state roots, and save errors fail closed 
     cwd,
     source: "startup",
   }, { PLUGIN_DATA: projectData });
-  assert.notEqual(local.exitCode, 0);
+  assert.equal(local.exitCode, 0);
   assert.match(contextOf(local), /RED/);
   assert.equal(existsSync(projectData), false);
 
@@ -414,6 +448,7 @@ test("missing host data, project-local state roots, and save errors fail closed 
     cwd,
     prompt: "green light for must not persist",
   }, { CLAUDE_PLUGIN_DATA: dataFile });
-  assert.notEqual(saveFailure.exitCode, 0);
+  assert.equal(saveFailure.exitCode, 2);
+  assert.ok(saveFailure.stderr.trim().length > 0);
   assert.match(contextOf(saveFailure), /RED/);
 });

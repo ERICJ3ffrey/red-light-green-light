@@ -93,10 +93,15 @@ function denyResult(reason, options = {}) {
 }
 
 function failedClosed(eventName, reason = "Hook runtime failed closed.") {
-  const options = { exitCode: 1, stderr: `${reason}\n` };
-  if (eventName === "PreToolUse") return denyResult("Hook runtime failed closed.", options);
-  if (eventName === "Stop") return result({}, options);
-  return contextResult(EVENTS.has(eventName) ? eventName : "SessionStart", createRedState("startup"), "", options);
+  const red = createRedState("startup");
+  const blocking = { exitCode: 2, stderr: `${reason}\n` };
+  if (eventName === "PreToolUse") return denyResult("Hook runtime failed closed.", blocking);
+  if (eventName === "UserPromptSubmit") return contextResult("UserPromptSubmit", red, "", blocking);
+  if (eventName === "Stop") return result({});
+  if (eventName === "SessionStart" || eventName === "SubagentStart") {
+    return contextResult(eventName, red);
+  }
+  return contextResult("SessionStart", red, "", blocking);
 }
 
 function invalidNormalized(reason) {
