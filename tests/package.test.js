@@ -53,8 +53,18 @@ test("packed package excludes development-only paths", () => {
   assert.equal(result.status, 0, result.stderr || result.error?.message);
   const packedPaths = JSON.parse(result.stdout)[0].files.map(({ path }) => path);
   for (const required of [
+    ".agents/plugins/marketplace.json",
+    ".claude-plugin/marketplace.json",
+    ".claude-plugin/plugin.json",
+    ".codex-plugin/plugin.json",
     ".pi/extensions/red-light-green-light.ts",
+    "commands/light.md",
+    "hooks/hooks.json",
+    "hooks/lib/hook-runtime.mjs",
+    "hooks/lib/state-store.mjs",
+    "hooks/red-light-green-light.mjs",
     "runtime/command-policy.js",
+    "runtime/patch-policy.js",
     "runtime/planning-paths.js",
     "runtime/protocol.js",
     "skills/red-light-green-light/SKILL.md",

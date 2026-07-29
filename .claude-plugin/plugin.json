@@ -1,0 +1,10 @@
+{
+  "name": "red-light-green-light",
+  "version": "0.2.0",
+  "description": "User-controlled Red, Yellow, and scoped Green authority for AI coding agents",
+  "author": {
+    "name": "ERICJ3ffrey",
+    "url": "https://github.com/ERICJ3ffrey"
+  },
+  "hooks": "./hooks/hooks.json"
+}

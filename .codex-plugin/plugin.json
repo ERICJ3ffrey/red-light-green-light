@@ -1,0 +1,36 @@
+{
+  "name": "red-light-green-light",
+  "version": "0.2.0",
+  "description": "User-controlled Red, Yellow, and scoped Green authority for AI coding agents",
+  "author": {
+    "name": "ERICJ3ffrey",
+    "url": "https://github.com/ERICJ3ffrey"
+  },
+  "homepage": "https://github.com/ERICJ3ffrey/red-light-green-light#readme",
+  "repository": "https://github.com/ERICJ3ffrey/red-light-green-light.git",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "permissions",
+    "planning",
+    "ai-coding-agent"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Red Light Green Light",
+    "shortDescription": "User-controlled authority for AI coding agents",
+    "longDescription": "Control when AI coding agents may research, plan, or implement with Red, Yellow, and scoped Green authority.",
+    "developerName": "ERICJ3ffrey",
+    "category": "Productivity",
+    "capabilities": [
+      "Instructions",
+      "Lifecycle hooks"
+    ],
+    "websiteURL": "https://github.com/ERICJ3ffrey/red-light-green-light",
+    "defaultPrompt": [
+      "Show the current Red Light Green Light authority status."
+    ],
+    "brandColor": "#DC2626"
+  }
+}

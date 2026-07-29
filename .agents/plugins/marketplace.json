@@ -1,0 +1,21 @@
+{
+  "name": "red-light-green-light",
+  "interface": {
+    "displayName": "Red Light Green Light"
+  },
+  "plugins": [
+    {
+      "name": "red-light-green-light",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/ERICJ3ffrey/red-light-green-light.git",
+        "ref": "main"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

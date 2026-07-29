@@ -16,6 +16,74 @@ export function validateComponentPath(root, value) {
   return errors;
 }
 
+export function parseJsonFile(path) {
+  if (!existsSync(path)) return { value: null, errors: [`missing JSON file: ${path}`] };
+
+  try {
+    return { value: JSON.parse(readFileSync(path, "utf8")), errors: [] };
+  } catch (error) {
+    return { value: null, errors: [`invalid JSON in ${path}: ${error.message}`] };
+  }
+}
+
+export function validateNativeManifests(root) {
+  const expectedName = "red-light-green-light";
+  const expectedVersion = "0.2.0";
+  const errors = [];
+  const manifests = {};
+
+  for (const relative of [
+    ".claude-plugin/plugin.json",
+    ".claude-plugin/marketplace.json",
+    ".codex-plugin/plugin.json",
+    ".agents/plugins/marketplace.json",
+  ]) {
+    const result = parseJsonFile(resolve(root, relative));
+    errors.push(...result.errors);
+    manifests[relative] = result.value;
+  }
+
+  const claudePlugin = manifests[".claude-plugin/plugin.json"];
+  const claudeMarketplace = manifests[".claude-plugin/marketplace.json"];
+  const codexPlugin = manifests[".codex-plugin/plugin.json"];
+  const codexMarketplace = manifests[".agents/plugins/marketplace.json"];
+
+  for (const [label, manifest] of [
+    ["Claude plugin", claudePlugin],
+    ["Codex plugin", codexPlugin],
+  ]) {
+    if (!manifest) continue;
+    if (manifest.name !== expectedName) errors.push(`${label} name must be ${expectedName}`);
+    if (manifest.version !== expectedVersion) errors.push(`${label} version must be ${expectedVersion}`);
+  }
+
+  for (const [label, marketplace] of [
+    ["Claude marketplace", claudeMarketplace],
+    ["Codex marketplace", codexMarketplace],
+  ]) {
+    if (!marketplace) continue;
+    if (marketplace.name !== expectedName) errors.push(`${label} name must be ${expectedName}`);
+    if (marketplace.plugins?.length !== 1 || marketplace.plugins[0]?.name !== expectedName) {
+      errors.push(`${label} must contain the ${expectedName} plugin`);
+    }
+  }
+
+  if (claudeMarketplace?.plugins?.[0]?.version !== expectedVersion) {
+    errors.push(`Claude marketplace plugin version must be ${expectedVersion}`);
+  }
+
+  for (const [label, value] of [
+    ["Claude hooks", claudePlugin?.hooks],
+    ["Codex skills", codexPlugin?.skills],
+    ["Codex hooks", codexPlugin?.hooks],
+  ]) {
+    if (value === undefined) continue;
+    errors.push(...validateComponentPath(root, value).map((error) => `${label}: ${error}`));
+  }
+
+  return errors;
+}
+
 export function validateSkillText(text) {
   const skill = text.replace(/\r\n/g, "\n");
   const lines = skill.split("\n");
@@ -38,7 +106,7 @@ export function validateSkillText(text) {
 function validatePackage() {
   const root = resolve(import.meta.dirname, "..");
   const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
-  const errors = [];
+  const errors = validateNativeManifests(root);
 
   for (const relative of [...pkg.pi.skills, ...pkg.pi.extensions]) {
     if (!existsSync(resolve(root, relative))) errors.push(`missing package path: ${relative}`);
