@@ -1,6 +1,20 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
+
+export function validateComponentPath(root, value) {
+  const errors = [];
+  if (typeof value !== "string" || !value.trim()) return ["component path must be a non-empty string"];
+  if (isAbsolute(value)) errors.push(`component path must be relative: ${value}`);
+  if (!value.startsWith("./")) errors.push(`component path must start with ./: ${value}`);
+
+  const absolute = resolve(root, value);
+  const rel = relative(resolve(root), absolute);
+  const escapes = rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel);
+  if (escapes) errors.push(`component path resolves outside package root: ${value}`);
+  if (!escapes && !existsSync(absolute)) errors.push(`missing component path: ${value}`);
+  return errors;
+}
 
 export function validateSkillText(text) {
   const skill = text.replace(/\r\n/g, "\n");

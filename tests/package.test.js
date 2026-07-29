@@ -18,8 +18,22 @@ test("package declares Pi skill and extension resources", () => {
   assert.equal(pkg.scripts["acceptance:pi"], "node tests/acceptance/pi/run-acceptance.mjs");
 });
 
-test("package limits distributed files to runtime resources", () => {
-  assert.deepEqual(pkg.files, [".pi/extensions/", "runtime/", "skills/"]);
+test("package declares the v0.2 cross-harness release contract", () => {
+  assert.equal(pkg.version, "0.2.0");
+  for (const entry of [
+    ".agents/plugins/",
+    ".claude-plugin/",
+    ".codex-plugin/",
+    "commands/",
+    "hooks/",
+  ]) {
+    assert.ok(pkg.files.includes(entry), `missing package allowlist entry ${entry}`);
+  }
+  for (const entry of [".pi/extensions/", "runtime/", "skills/"]) {
+    assert.ok(pkg.files.includes(entry), `missing existing package resource ${entry}`);
+  }
+  assert.equal(pkg.homepage, "https://github.com/ERICJ3ffrey/red-light-green-light#readme");
+  assert.equal(pkg.bugs.url, "https://github.com/ERICJ3ffrey/red-light-green-light/issues");
 });
 
 test("packed package excludes development-only paths", () => {

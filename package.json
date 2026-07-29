@@ -1,6 +1,6 @@
 {
   "name": "red-light-green-light",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "User-controlled Red, Yellow, and scoped Green authority for AI coding agents",
   "type": "module",
   "license": "MIT",
@@ -8,6 +8,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ERICJ3ffrey/red-light-green-light.git"
+  },
+  "homepage": "https://github.com/ERICJ3ffrey/red-light-green-light#readme",
+  "bugs": {
+    "url": "https://github.com/ERICJ3ffrey/red-light-green-light/issues"
   },
   "keywords": [
     "pi-package",
@@ -20,7 +24,12 @@
     "node": ">=22"
   },
   "files": [
+    ".agents/plugins/",
+    ".claude-plugin/",
+    ".codex-plugin/",
     ".pi/extensions/",
+    "commands/",
+    "hooks/",
     "runtime/",
     "skills/"
   ],
