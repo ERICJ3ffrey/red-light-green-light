@@ -124,7 +124,7 @@ test("Codex manifest is rich, text-only, and points to packaged components", () 
   assert.equal(plugin.skills, "./skills/");
   assert.equal(plugin.hooks, "./hooks/hooks.json");
   assert.deepEqual(plugin.interface.capabilities, ["Instructions", "Lifecycle hooks"]);
-  assert.equal(plugin.interface.displayName, "Red Light Green Light");
+  assert.equal(plugin.interface.displayName, "red-light-green-light");
   assert.equal(typeof plugin.interface.shortDescription, "string");
   assert.ok(plugin.interface.shortDescription.length > 0);
   assert.equal(typeof plugin.interface.longDescription, "string");
@@ -137,10 +137,10 @@ test("Codex manifest is rich, text-only, and points to packaged components", () 
   );
   assert.ok(Array.isArray(plugin.interface.defaultPrompt));
   assert.ok(plugin.interface.defaultPrompt.length > 0);
-  assert.match(plugin.interface.brandColor, /^#[0-9A-F]{6}$/);
+  assert.equal(plugin.interface.brandColor, "#101417");
+  assert.equal(plugin.interface.composerIcon, "./assets/red-light-green-light-logo.svg");
+  assert.equal(plugin.interface.logo, "./assets/red-light-green-light-logo.svg");
   for (const omitted of [
-    "composerIcon",
-    "logo",
     "logoDark",
     "screenshots",
     "privacyPolicyURL",
@@ -153,7 +153,7 @@ test("Codex manifest is rich, text-only, and points to packaged components", () 
 test("Codex marketplace installs the release branch Git source on demand", () => {
   const marketplace = readJson(".agents/plugins/marketplace.json");
   assert.equal(marketplace.name, "red-light-green-light");
-  assert.equal(marketplace.interface.displayName, "Red Light Green Light");
+  assert.equal(marketplace.interface.displayName, "red-light-green-light");
   assert.equal(marketplace.plugins.length, 1);
   const entry = marketplace.plugins[0];
   assert.equal(entry.name, "red-light-green-light");

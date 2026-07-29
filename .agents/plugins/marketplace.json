@@ -1,7 +1,7 @@
 {
   "name": "red-light-green-light",
   "interface": {
-    "displayName": "Red Light Green Light"
+    "displayName": "red-light-green-light"
   },
   "plugins": [
     {

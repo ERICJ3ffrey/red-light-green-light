@@ -87,6 +87,8 @@ export function validateNativeManifests(root) {
     ["Claude hooks", claudePlugin?.hooks],
     ["Codex skills", codexPlugin?.skills],
     ["Codex hooks", codexPlugin?.hooks],
+    ["Codex composer icon", codexPlugin?.interface?.composerIcon],
+    ["Codex logo", codexPlugin?.interface?.logo],
   ]) {
     if (value === undefined) continue;
     errors.push(...validateComponentPath(root, value).map((error) => `${label}: ${error}`));

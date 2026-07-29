@@ -28,6 +28,7 @@
     ".claude-plugin/",
     ".codex-plugin/",
     ".pi/extensions/",
+    "assets/",
     "commands/",
     "hooks/",
     "runtime/",

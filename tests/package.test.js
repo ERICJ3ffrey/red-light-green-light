@@ -58,6 +58,7 @@ test("packed package excludes development-only paths", () => {
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
     ".pi/extensions/red-light-green-light.ts",
+    "assets/red-light-green-light-logo.svg",
     "commands/light.md",
     "hooks/hooks.json",
     "hooks/lib/hook-runtime.mjs",

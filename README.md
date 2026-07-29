@@ -1,4 +1,8 @@
-# Red Light Green Light
+<p align="center">
+  <img src="assets/red-light-green-light-logo.svg" alt="red-light-green-light logo" width="160">
+</p>
+
+# red-light-green-light
 
 User-controlled authority for AI coding agents.
 
