@@ -108,6 +108,30 @@ test("pure natural-language transition is handled without an agent turn", async 
   assert.equal(pi.entries.at(-1).data.mode, "yellow");
 });
 
+test("light-first controls switch from any state and manual Green does not auto-release", async () => {
+  const pi = fakePi();
+  extension(pi.api);
+  const ctx = context();
+  await first(pi.handlers, "session_start")({ reason: "startup" }, ctx);
+
+  assert.deepEqual(
+    await first(pi.handlers, "input")({ text: "light green", source: "interactive" }, ctx),
+    { action: "handled" },
+  );
+  assert.equal(pi.entries.at(-1).data.mode, "green");
+  assert.equal(pi.entries.at(-1).data.releasePolicy, "manual");
+
+  const completed = { role: "assistant", content: [{ type: "text", text: "Done\nLIGHT_RELEASE: complete" }] };
+  await first(pi.handlers, "message_end")({ message: completed }, ctx);
+  await first(pi.handlers, "agent_end")({ messages: [completed], willRetry: false }, ctx);
+  assert.equal(pi.entries.at(-1).data.mode, "green");
+
+  await first(pi.handlers, "input")({ text: "light yellow docs/plans", source: "interactive" }, ctx);
+  assert.equal(pi.entries.at(-1).data.mode, "yellow");
+  await first(pi.handlers, "input")({ text: "light red", source: "interactive" }, ctx);
+  assert.equal(pi.entries.at(-1).data.mode, "red");
+});
+
 test("extension-injected input cannot increase authority", async () => {
   const pi = fakePi();
   extension(pi.api);

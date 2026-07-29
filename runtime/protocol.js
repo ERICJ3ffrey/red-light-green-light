@@ -39,6 +39,15 @@ export function parseTransitionMessage(raw) {
 
   if (/^\/light\s+/i.test(line)) {
     parsed = parseLightArgs(line.replace(/^\/light\s+/i, ""));
+  } else if (/^light\s+/i.test(line)) {
+    const match = line.match(/^light\s+(red|yellow|green|status)(?:\s+(.+))?$/i);
+    if (!match) return undefined;
+    const mode = match[1].toLowerCase();
+    let value = match[2]?.trim() || "";
+    if (mode === "green" && /^for\s+/i.test(value)) value = value.replace(/^for\s+/i, "");
+    parsed = mode === "green" && !value
+      ? { ok: true, transition: { mode: "green", scope: "user-enabled Green mode", releasePolicy: "manual" } }
+      : parseLightArgs(`${mode}${value ? ` ${value}` : ""}`);
   } else if (/^red light$/i.test(line)) {
     parsed = { ok: true, transition: { mode: "red" } };
   } else if (/^yellow light(?:\s+(.+))?$/i.test(line)) {
@@ -51,8 +60,11 @@ export function parseTransitionMessage(raw) {
     return undefined;
   }
 
-  if (!parsed.ok || !parsed.transition) return undefined;
-  return { transition: parsed.transition, task: remaining.join("\n").trim() };
+  const task = remaining.join("\n").trim();
+  if (!parsed.ok) return { error: parsed.error, task };
+  if (parsed.status) return { status: true, task };
+  if (!parsed.transition) return undefined;
+  return { transition: parsed.transition, task };
 }
 
 export function applyUserTransition(_current, transition, options = {}) {
@@ -74,6 +86,7 @@ export function applyUserTransition(_current, transition, options = {}) {
     scope: transition.scope.trim(),
     scopeEnforcement: allowedPaths?.length ? "path-bound" : "semantic",
     allowedPaths: allowedPaths?.length ? [...allowedPaths] : undefined,
+    releasePolicy: transition.releasePolicy === "manual" ? "manual" : undefined,
     grantedAt: now,
     grantedByUserEntry: options.userEntry,
   };
@@ -97,6 +110,9 @@ export function renderAuthorityContext(state) {
     const allowedPaths = state.scopeEnforcement === "path-bound"
       ? `\nAllowed paths: ${state.allowedPaths?.join(", ") || "(none)"}`
       : "";
+    if (state.releasePolicy === "manual") {
+      return `${header}\nUser-enabled Green mode is active. Follow the user's current requests without inventing adjacent work.${allowedPaths}\nThis mode remains Green until the user changes the light. Do not emit a completion release marker merely because one task finishes.\n${protectedBoundary}`;
+    }
     return `${header}\nAuthorized scope: ${state.scope}\nScope enforcement: ${state.scopeEnforcement}.${allowedPaths} Do not widen scope. When complete or blocked, end with LIGHT_RELEASE: complete or LIGHT_RELEASE: blocked.\n${protectedBoundary}`;
   }
   return redContext;

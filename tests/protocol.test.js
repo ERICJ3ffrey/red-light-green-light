@@ -66,6 +66,26 @@ test("combined transition preserves the task after the first line", () => {
   });
 });
 
+test("Codex-style light-first controls share the portable transition contract", () => {
+  assert.deepEqual(parseTransitionMessage("light red"), {
+    transition: { mode: "red" },
+    task: "",
+  });
+  assert.deepEqual(parseTransitionMessage("light yellow docs/plans"), {
+    transition: { mode: "yellow", planningPath: "docs/plans" },
+    task: "",
+  });
+  assert.deepEqual(parseTransitionMessage("light green for implement auth"), {
+    transition: { mode: "green", scope: "implement auth" },
+    task: "",
+  });
+  assert.deepEqual(parseTransitionMessage("light status"), { status: true, task: "" });
+  assert.deepEqual(parseTransitionMessage("light green"), {
+    transition: { mode: "green", scope: "user-enabled Green mode", releasePolicy: "manual" },
+    task: "",
+  });
+});
+
 test("user transition creates scoped green", () => {
   const next = applyUserTransition(createRedState(), { mode: "green", scope: "implement auth plan" }, {
     now: "2026-07-27T01:00:00.000Z",
@@ -93,6 +113,18 @@ test("release markers only reduce green to red", () => {
 test("release marker must be at the end of the entire output", () => {
   assert.equal(detectRelease("LIGHT_RELEASE: complete\nI will continue working."), undefined);
   assert.equal(detectRelease("Finished.\nLIGHT_RELEASE: complete  \n\t"), "complete");
+});
+
+test("manual Green remains user-controlled instead of requesting automatic release", () => {
+  const state = applyUserTransition(createRedState(), {
+    mode: "green",
+    scope: "user-enabled Green mode",
+    releasePolicy: "manual",
+  });
+  assert.equal(state.releasePolicy, "manual");
+  const text = renderAuthorityContext(state);
+  assert.match(text, /remains Green until the user changes the light/i);
+  assert.doesNotMatch(text, /LIGHT_RELEASE: complete/);
 });
 
 test("authority context repeats mode, scope, and protected-action boundary", () => {

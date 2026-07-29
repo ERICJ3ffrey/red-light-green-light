@@ -19,7 +19,7 @@ test("package declares Pi skill and extension resources", () => {
 });
 
 test("package declares the v0.2 cross-harness release contract", () => {
-  assert.equal(pkg.version, "0.2.0");
+  assert.equal(pkg.version, "0.2.1");
   for (const entry of [
     ".agents/plugins/",
     ".claude-plugin/",

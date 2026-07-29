@@ -206,6 +206,12 @@ export async function handleHook(eventName, payload, env = {}) {
 
       const parsed = parseTransitionMessage(payload.prompt);
       if (!parsed) return contextResult("UserPromptSubmit", current);
+      if (parsed.error) {
+        return contextResult("UserPromptSubmit", current, `Transition rejected: ${parsed.error}`);
+      }
+      if (parsed.status) {
+        return contextResult("UserPromptSubmit", current, "Report the current authority status to the user. Do not change it.");
+      }
 
       const state = applyUserTransition(current, parsed.transition, {
         userEntry: nonEmptyString(payload.user_entry_id)
@@ -254,7 +260,7 @@ export async function handleHook(eventName, payload, env = {}) {
     const release = typeof payload.last_assistant_message === "string"
       ? detectRelease(payload.last_assistant_message)
       : undefined;
-    if (release) {
+    if (release && !(release === "complete" && state.releasePolicy === "manual")) {
       await resetSession({
         dataDir: info.dataDir,
         sessionId: info.sessionId,

@@ -12,6 +12,10 @@ The user or approved plan supplies an enforceable file allowlist. The adapter bl
 
 The user supplies a natural-language scope without a reliable file allowlist. The adapter enforces mode mechanically and scope through instructions and drift checks. Do not describe semantic scope as mechanically guaranteed.
 
+## Manual Green
+
+Exact `light green` enables semantic Green for successive user-directed tasks until the user changes the light. It does not authorize invented adjacent work or protected actions. Manual Green ignores ordinary completion release markers; Red and Yellow controls remain available from every state.
+
 ## Instruction guarded
 
 The harness loads the protocol automatically but cannot intercept every tool. The model follows the rules, but prohibited actions are not technically impossible.

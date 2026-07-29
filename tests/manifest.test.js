@@ -77,7 +77,7 @@ test("manifest JSON parsing reports malformed files without throwing", () => {
 test("Claude manifest and marketplace expose the v0.2 adapter", () => {
   const plugin = readJson(".claude-plugin/plugin.json");
   assert.equal(plugin.name, "red-light-green-light");
-  assert.equal(plugin.version, "0.2.0");
+  assert.equal(plugin.version, "0.2.1");
   assert.equal(
     plugin.description,
     "User-controlled Red, Yellow, and scoped Green authority for AI coding agents",
@@ -100,7 +100,7 @@ test("Claude manifest and marketplace expose the v0.2 adapter", () => {
   });
   assert.equal(marketplace.plugins.length, 1);
   assert.equal(marketplace.plugins[0].name, "red-light-green-light");
-  assert.equal(marketplace.plugins[0].version, "0.2.0");
+  assert.equal(marketplace.plugins[0].version, "0.2.1");
   assert.equal(marketplace.plugins[0].source, "./");
   assert.equal(marketplace.plugins[0].category, "productivity");
 });
@@ -108,7 +108,7 @@ test("Claude manifest and marketplace expose the v0.2 adapter", () => {
 test("Codex manifest is rich, text-only, and points to packaged components", () => {
   const plugin = readJson(".codex-plugin/plugin.json");
   assert.equal(plugin.name, "red-light-green-light");
-  assert.equal(plugin.version, "0.2.0");
+  assert.equal(plugin.version, "0.2.1");
   assert.equal(
     plugin.description,
     "User-controlled Red, Yellow, and scoped Green authority for AI coding agents",

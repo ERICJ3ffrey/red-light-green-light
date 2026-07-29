@@ -17,6 +17,7 @@ type LightState = ReturnType<typeof createRedState> & {
   scope?: string;
   scopeEnforcement?: "path-bound" | "semantic";
   allowedPaths?: string[];
+  releasePolicy?: "manual";
   grantedByUserEntry?: string;
 };
 
@@ -126,6 +127,14 @@ export default function redLightGreenLight(pi: ExtensionAPI): void {
 
     const parsed = parseTransitionMessage(event.text);
     if (!parsed) return { action: "continue" as const };
+    if (parsed.error) {
+      ctx.ui.notify(parsed.error, "warning");
+      return { action: "handled" as const };
+    }
+    if (parsed.status) {
+      ctx.ui.notify(renderAuthorityContext(state), "info");
+      return { action: "handled" as const };
+    }
     transition(parsed.transition as Record<string, unknown>, ctx);
     if (!parsed.task) return { action: "handled" as const };
     return { action: "transform" as const, text: parsed.task };
@@ -150,7 +159,8 @@ export default function redLightGreenLight(pi: ExtensionAPI): void {
   pi.on("message_end", async (event) => {
     const message = event.message as { role?: string };
     if (message.role !== "assistant" || state.mode !== "green") return;
-    pendingRelease = detectRelease(messageText(event.message));
+    const release = detectRelease(messageText(event.message));
+    pendingRelease = release === "complete" && state.releasePolicy === "manual" ? undefined : release;
   });
 
   pi.on("agent_end", async (event, ctx) => {

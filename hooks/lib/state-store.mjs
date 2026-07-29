@@ -8,7 +8,7 @@ const COMMON_KEYS = new Set(["mode", "grantedAt", "grantedByUserEntry"]);
 const MODE_KEYS = {
   red: new Set([...COMMON_KEYS, "resetReason"]),
   yellow: new Set([...COMMON_KEYS, "planningPaths"]),
-  green: new Set([...COMMON_KEYS, "scope", "scopeEnforcement", "allowedPaths"]),
+  green: new Set([...COMMON_KEYS, "scope", "scopeEnforcement", "allowedPaths", "releasePolicy"]),
 };
 
 function isNonEmptyString(value) {
@@ -43,7 +43,10 @@ function validateState(state) {
   if (state.mode !== "green" || !hasOnlyKeys(state, MODE_KEYS.green)) return false;
   if (!isNonEmptyString(state.scope)) return false;
   if (!new Set(["semantic", "path-bound"]).has(state.scopeEnforcement)) return false;
-  if (state.scopeEnforcement === "path-bound") return isStringArray(state.allowedPaths, { allowEmpty: false });
+  if (state.releasePolicy !== undefined && state.releasePolicy !== "manual") return false;
+  if (state.scopeEnforcement === "path-bound") {
+    return state.releasePolicy === undefined && isStringArray(state.allowedPaths, { allowEmpty: false });
+  }
   return state.allowedPaths === undefined;
 }
 

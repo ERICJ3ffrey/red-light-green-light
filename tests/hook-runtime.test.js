@@ -190,6 +190,52 @@ test("UserPromptSubmit alone increases authority and distinguishes pure from com
   assert.match(contextOf(malformed), /RED/);
 });
 
+test("Codex light-first controls switch directly to Green and report status", async (t) => {
+  const { cwd, dataDir, env } = fixture(t, "codex");
+  await handleHook("SessionStart", { session_id: "light-first", cwd, source: "startup" }, env);
+
+  const green = await handleHook("UserPromptSubmit", {
+    session_id: "light-first",
+    cwd,
+    prompt: "light green",
+  }, env);
+  const greenState = await persisted(dataDir, "light-first");
+  assert.equal(greenState.mode, "green");
+  assert.equal(greenState.scopeEnforcement, "semantic");
+  assert.equal(greenState.scope, "user-enabled Green mode");
+  assert.equal(greenState.releasePolicy, "manual");
+  assert.match(contextOf(green), /GREEN/);
+
+  await handleHook("Stop", {
+    session_id: "light-first",
+    cwd,
+    last_assistant_message: "Task complete.\nLIGHT_RELEASE: complete",
+  }, env);
+  assert.equal((await persisted(dataDir, "light-first")).mode, "green");
+
+  await handleHook("UserPromptSubmit", {
+    session_id: "light-first",
+    cwd,
+    prompt: "light yellow docs/plans",
+  }, env);
+  assert.equal((await persisted(dataDir, "light-first")).mode, "yellow");
+
+  await handleHook("UserPromptSubmit", {
+    session_id: "light-first",
+    cwd,
+    prompt: "light red",
+  }, env);
+  assert.equal((await persisted(dataDir, "light-first")).mode, "red");
+
+  const status = await handleHook("UserPromptSubmit", {
+    session_id: "light-first",
+    cwd,
+    prompt: "light status",
+  }, env);
+  assert.equal((await persisted(dataDir, "light-first")).mode, "red");
+  assert.match(contextOf(status), /Report the current authority status/);
+});
+
 test("non-prompt events cannot increase authority and every normal prompt receives current context", async (t) => {
   const { cwd, dataDir, env } = fixture(t);
   await handleHook("SessionStart", { session_id: "s1", cwd, source: "startup" }, env);

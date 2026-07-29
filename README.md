@@ -6,13 +6,13 @@
 
 User-controlled authority for AI coding agents.
 
-Every session starts Red. Only the user can grant Yellow or scoped Green authority.
+Every session starts Red. Only the user can change the light or grant scoped authority.
 
 - **Red:** read, research, and discuss. No file writes or mutating commands.
 - **Yellow:** Red plus planning artifacts under approved planning paths.
-- **Green:** implementation inside one user-named scope.
+- **Green:** scoped implementation, or user-enabled manual Green that stays active until changed.
 
-Completion, blockage, cancellation, or scope drift returns Green to Red.
+Scoped Green releases on completion, blockage, cancellation, or scope drift. Exact `light green` enables manual Green until the user selects another light.
 
 > **v0.2 preview:** Pi is the verified reference adapter. Claude Code and Codex packaging, hook contracts, manifests, and failure behavior are tested locally; clean-machine installation is the final release check.
 
@@ -60,13 +60,17 @@ codex plugin add red-light-green-light@red-light-green-light
 
 Restart Codex, open `/hooks`, review the plugin hook definitions, and explicitly trust them. Untrusted plugin hooks are skipped by Codex.
 
-Use exact natural-language transitions in Codex:
+Use light-first controls in Codex. They work from Red, Yellow, or Green:
 
 ```text
-red light
-yellow light docs/plans
-green light for implement docs/plans/auth.md
+light status
+light red
+light yellow docs/plans
+light green
+light green for implement docs/plans/auth.md
 ```
+
+`light green` enables manual Green until you select another light. The scoped form releases when its named task completes.
 
 ## Pi commands
 
@@ -81,9 +85,11 @@ green light for implement docs/plans/auth.md
 Pure exact natural-language transitions work across native adapters:
 
 ```text
-red light
-yellow light docs/plans
-green light for implement docs/plans/auth.md
+light status
+light red
+light yellow docs/plans
+light green
+light green for implement docs/plans/auth.md
 ```
 
 A pure transition changes authority only. Send the task separately or place it on the following line.
@@ -97,7 +103,7 @@ A pure transition changes authority only. Send the task separately or place it o
 | Red direct-write blocking | Mechanically guarded | PreToolUse for observed local tools | PreToolUse for observed local tools | Instruction guarded |
 | Yellow planning paths | Mechanically guarded | Mechanically guarded for intercepted file tools | Mechanically guarded for intercepted `apply_patch` | Instruction guarded |
 | Path-bound Green | Direct file tools | Intercepted file tools | Parsed `apply_patch` targets | Instruction guarded |
-| Semantic Green scope | Instruction guarded | Instruction guarded | Instruction guarded | Instruction guarded |
+| Semantic Green or manual Green | Instruction guarded | Instruction guarded | Instruction guarded | Instruction guarded |
 | Protected command families | Blocked in every light | Blocked when intercepted | Blocked when intercepted | Instruction guarded |
 | Hosted/specialized tool gaps | Unknown tools fail closed | Unknown intercepted tools fail closed | Some hosted/specialized paths do not emit hooks | Harness dependent |
 

@@ -55,6 +55,14 @@ test("saveSession creates the data directory and round-trips valid Red, Yellow, 
       grantedAt: NOW,
       grantedByUserEntry: "u-3",
     },
+    {
+      mode: "green",
+      scope: "user-enabled Green mode",
+      scopeEnforcement: "semantic",
+      releasePolicy: "manual",
+      grantedAt: NOW,
+      grantedByUserEntry: "u-4",
+    },
   ];
 
   for (const [index, state] of states.entries()) {

@@ -1,6 +1,6 @@
 {
   "name": "red-light-green-light",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "User-controlled Red, Yellow, and scoped Green authority for AI coding agents",
   "type": "module",
   "license": "MIT",

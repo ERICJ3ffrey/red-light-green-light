@@ -22,9 +22,14 @@ Red permissions plus planning artifacts under approved planning paths. Specs, pl
 
 ### Green
 
-Implement only the user-named scope. Do not perform adjacent cleanup or scope expansion. Dependency changes, protected Git operations, sends, publishing, deployment, purchases, and destructive actions require separate user-controlled gates. The Stage 1 Pi adapter keeps recognized protected actions blocked in every light; perform an approved protected action through a separate user-controlled channel.
+Green has two user-selected forms:
 
-Green persists while its scope is incomplete and unblocked. When the scope completes or cannot continue, end the response with exactly one marker:
+- **Scoped Green:** implement only the user-named scope. Do not perform adjacent cleanup or scope expansion.
+- **Manual Green:** exact `light green` enables Green for successive user-directed tasks until the user changes the light. Do not invent adjacent work.
+
+Dependency changes, protected Git operations, sends, publishing, deployment, purchases, and destructive actions require separate user-controlled gates. Native adapters keep recognized protected actions blocked in every light; perform an approved protected action through a separate user-controlled channel.
+
+Scoped Green persists while its scope is incomplete and unblocked. When a scoped Green task completes or cannot continue, end the response with exactly one marker:
 
 ```text
 LIGHT_RELEASE: complete
@@ -46,16 +51,17 @@ A prose claim such as “I am back at Red” does not release Green. The final n
 
 ## Transitions
 
-- `/light red` or exact “red light” sets Red immediately.
-- `/light yellow [planning-path]` sets Yellow.
-- `/light green <scope>` sets semantic Green.
-- `/light green <scope> --paths path-one,path-two` sets path-bound Green.
-- Exact “green light for <scope>” sets semantic Green.
-- `/light status` reports mode, planning paths, scope, and enforcement class.
+- `/light red`, exact `red light`, or exact `light red` sets Red immediately.
+- `/light yellow [planning-path]`, `yellow light [planning-path]`, or `light yellow [planning-path]` sets Yellow.
+- `/light green <scope>` sets scoped semantic Green.
+- `/light green <scope> --paths path-one,path-two` sets scoped path-bound Green.
+- Exact `green light for <scope>` or `light green for <scope>` sets scoped semantic Green.
+- Exact `light green` sets manual Green until the user selects another light.
+- `/light status` or exact `light status` reports the active mode and scope information.
 - New, resumed, forked, or reloaded sessions start Red.
 - Compaction never increases authority.
 
-A user message containing only a transition changes authority only. A Green scope names what may be done later; it is not itself an instruction to begin. Acknowledge the new mode without tools or implementation, then wait for a separate user task.
+A user message containing only a transition changes authority only. Acknowledge the new mode without tools or implementation, then wait for a separate user task. Manual Green remains active across completed tasks until the user selects Red or Yellow. Light controls are accepted from every current light.
 
 The agent may recommend a transition. It cannot grant Yellow, grant Green, or redirect Green. Subagents inherit the parent's light and scope and cannot increase them.
 
