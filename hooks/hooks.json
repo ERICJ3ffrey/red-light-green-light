@@ -1,0 +1,70 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/red-light-green-light.mjs\" SessionStart",
+            "commandWindows": "node \"$env:CLAUDE_PLUGIN_ROOT\\hooks\\red-light-green-light.mjs\" SessionStart",
+            "timeout": 5,
+            "statusMessage": "Setting Red Light Green Light session authority"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/red-light-green-light.mjs\" UserPromptSubmit",
+            "commandWindows": "node \"$env:CLAUDE_PLUGIN_ROOT\\hooks\\red-light-green-light.mjs\" UserPromptSubmit",
+            "timeout": 5,
+            "statusMessage": "Applying Red Light Green Light prompt authority"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/red-light-green-light.mjs\" PreToolUse",
+            "commandWindows": "node \"$env:CLAUDE_PLUGIN_ROOT\\hooks\\red-light-green-light.mjs\" PreToolUse",
+            "timeout": 5,
+            "statusMessage": "Checking Red Light Green Light tool authority"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/red-light-green-light.mjs\" SubagentStart",
+            "commandWindows": "node \"$env:CLAUDE_PLUGIN_ROOT\\hooks\\red-light-green-light.mjs\" SubagentStart",
+            "timeout": 5,
+            "statusMessage": "Injecting Red Light Green Light subagent authority"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/red-light-green-light.mjs\" Stop",
+            "commandWindows": "node \"$env:CLAUDE_PLUGIN_ROOT\\hooks\\red-light-green-light.mjs\" Stop",
+            "timeout": 5,
+            "statusMessage": "Checking Red Light Green Light release state"
+          }
+        ]
+      }
+    ]
+  }
+}
