@@ -22,12 +22,12 @@ Red permissions plus planning artifacts under approved planning paths. Specs, pl
 
 ### Green
 
-Green has two user-selected forms:
+Green means execution authority. It has two user-selected forms:
 
-- **Scoped Green:** implement only the user-named scope. Do not perform adjacent cleanup or scope expansion.
-- **Manual Green:** exact `light green` enables Green for successive user-directed tasks until the user changes the light. Do not invent adjacent work.
+- **Scoped Green:** perform any action needed inside the user-named scope, including commands, dependency changes, Git operations, deployments, publishing, sends, and other external side effects. Do not perform adjacent work or expand the scope.
+- **Manual Green:** exact `light green` enables full execution authority for successive user-directed tasks until the user changes the light. Do not invent adjacent work.
 
-Dependency changes, protected Git operations, sends, publishing, deployment, purchases, and destructive actions require separate user-controlled gates. Native adapters keep recognized protected actions blocked in every light; perform an approved protected action through a separate user-controlled channel.
+Green removes this skill's restrictions. The host may still require its own confirmation for sensitive actions; this skill does not bypass host or operating-system controls.
 
 Scoped Green persists while its scope is incomplete and unblocked. When a scoped Green task completes or cannot continue, end the response with exactly one marker:
 
@@ -67,7 +67,7 @@ The agent may recommend a transition. It cannot grant Yellow, grant Green, or re
 
 ## Enforcement
 
-Native adapters may block tools mechanically. A plain Agent Skills installation is instruction guarded. See [references/enforcement.md](references/enforcement.md) for the support labels.
+Native adapters may block tools mechanically. A plain Agent Skills installation is instruction guarded. Green removes this skill's restrictions, but host-level confirmations and operating-system permissions still apply.
 
 ## Red flags
 

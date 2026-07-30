@@ -1,16 +1,12 @@
-<p align="center">
-  <img src="assets/red-light-green-light-logo.svg" alt="red-light-green-light logo" width="160">
-</p>
-
 # red-light-green-light
 
-AI coding agents often start editing while you are still thinking. `red-light-green-light` gives you explicit control over when the agent can research, plan, or build.
+AI coding agents start building while you are still thinking. `red-light-green-light` lets you decide when they can research, plan, or act.
 
-Every new session starts Red. Only you can change the light.
+Every session starts Red. Only you can change the light.
 
-- **Red:** read, research, and plan in chat. No file edits.
-- **Yellow:** write planning documents, but do not touch production files.
-- **Green:** build. Use scoped Green for one task or `light green` to stay Green until you change it.
+- **Red:** read, research, discuss, and plan in chat. No changes.
+- **Yellow:** write planning documents. No production changes.
+- **Green:** execute the task. Green means Green.
 
 ## Install
 
@@ -20,17 +16,15 @@ Every new session starts Red. Only you can change the light.
 pi install git:github.com/ERICJ3ffrey/red-light-green-light
 ```
 
-Use:
-
 ```text
 /light status
 /light red
 /light yellow docs/plans
-/light green implement the approved plan
-/light green implement the approved plan --paths src/auth.js,tests/auth.test.js
+/light green
+/light green for implement the approved plan
 ```
 
-Pi displays the active light in its footer.
+Pi shows the active light in its footer.
 
 ### Claude Code
 
@@ -39,24 +33,9 @@ claude plugin marketplace add ERICJ3ffrey/red-light-green-light
 claude plugin install red-light-green-light@red-light-green-light
 ```
 
-Restart Claude Code and confirm the plugin hooks are enabled in `/hooks`.
+Restart Claude Code and enable the hooks in `/hooks`.
 
-```text
-/red-light-green-light:light status
-/red-light-green-light:light yellow docs/plans
-/red-light-green-light:light green implement the approved plan
-```
-
-### Codex
-
-```bash
-codex plugin marketplace add ERICJ3ffrey/red-light-green-light --ref master
-codex plugin add red-light-green-light@red-light-green-light
-```
-
-Restart Codex, open `/hooks`, and trust the plugin hooks.
-
-Codex does not support plugin-defined `/light` commands. Use:
+Claude namespaces plugin slash commands, so use the plain controls instead:
 
 ```text
 light status
@@ -66,26 +45,38 @@ light green
 light green for implement the approved plan
 ```
 
-These controls work from Red, Yellow, or Green. `light green` stays Green until you select another light. To disable the plugin, open `/plugins`, select `red-light-green-light`, and press Space.
+### Codex
 
-Codex does not currently let plugins add a custom footer item, so use `light status` to check the active light.
+```bash
+codex plugin marketplace add ERICJ3ffrey/red-light-green-light --ref master
+codex plugin add red-light-green-light@red-light-green-light
+```
+
+Restart Codex and trust the hooks in `/hooks`.
+
+```text
+light status
+light red
+light yellow docs/plans
+light green
+light green for implement the approved plan
+```
+
+Codex does not support plugin-defined `/light` commands or custom footer items. Use `light status` to check the active light. Disable the plugin through `/plugins`.
+
+## Green means Green
+
+Semantic or manual Green allows the tools needed for the user's request, including Git operations, dependency changes, deployments, publishing, sends, and destructive commands. Scoped Green stays inside its named scope. Path-bound Green stays inside its file allowlist.
+
+The host may still show its own confirmation prompt. This package does not bypass host permissions or the operating system.
 
 ## Enforcement
 
-| Capability | Pi | Claude Code | Codex | Agent Skill only |
-|---|---|---|---|---|
-| Automatic startup Red | Native, verified | Native hook | Native hook after trust | No |
-| User-only transitions | Native, verified | `UserPromptSubmit` hook | `UserPromptSubmit` hook | Instruction guarded |
-| Red direct-write blocking | Mechanically guarded | Intercepted local tools | Intercepted local tools | Instruction guarded |
-| Yellow planning paths | Mechanically guarded | Intercepted file tools | Intercepted `apply_patch` | Instruction guarded |
-| Path-bound Green | Direct file tools | Intercepted file tools | Parsed `apply_patch` targets | Instruction guarded |
-| Semantic or manual Green | Instruction guarded | Instruction guarded | Instruction guarded | Instruction guarded |
-| Protected command families | Blocked in every light | Blocked when intercepted | Blocked when intercepted | Instruction guarded |
-| Unclassified intercepted tools | Fail closed | Fail closed | Fail closed | Harness dependent |
-
-Green does not authorize commits, pushes, dependency installation, deployments, publishing, external sends, purchases, destructive operations, or credential changes. Use a separate user-controlled channel for those actions.
-
-This package is a tool-call authorization layer, not an OS sandbox. See [SECURITY.md](SECURITY.md) for the enforcement boundary and residual risks.
+- Pi, Claude Code, and Codex start Red through native adapters.
+- Red and Yellow are mechanically guarded where the host exposes tool hooks.
+- Semantic scope is instruction guarded. Path-bound file writes are mechanically guarded.
+- Protected and unclassified tools are **Allowed in Green** and blocked in Red and Yellow.
+- This is a tool-call authorization layer, not an OS sandbox. See [SECURITY.md](SECURITY.md).
 
 ## License
 

@@ -97,13 +97,12 @@ export function detectRelease(text) {
 }
 
 export function renderAuthorityContext(state) {
-  const protectedBoundary = "Recognized protected actions remain blocked by the Stage 1 adapter in every light; use a separate user-controlled channel.";
-  const redContext = `[RED LIGHT GREEN LIGHT: RED]\nRead, research, and discuss only. Do not create or edit files or run mutating commands.\n${protectedBoundary}`;
+  const redContext = "[RED LIGHT GREEN LIGHT: RED]\nRead, research, and discuss only. Do not create or edit files, run mutating commands, or trigger external side effects.";
   if (state?.mode === "red") return redContext;
   if (state?.mode === "yellow") {
     const header = "[RED LIGHT GREEN LIGHT: YELLOW]";
     const roots = state.planningPaths?.length ? state.planningPaths.join(", ") : "configured planning roots";
-    return `${header}\nPlanning writes are allowed only under: ${roots}. Production source, tests, runtime config, dependencies, human data, and external side effects remain blocked.\n${protectedBoundary}`;
+    return `${header}\nPlanning writes are allowed only under: ${roots}. Production source, tests, runtime config, dependencies, human data, and external side effects remain blocked.`;
   }
   if (state?.mode === "green") {
     const header = "[RED LIGHT GREEN LIGHT: GREEN]";
@@ -111,9 +110,9 @@ export function renderAuthorityContext(state) {
       ? `\nAllowed paths: ${state.allowedPaths?.join(", ") || "(none)"}`
       : "";
     if (state.releasePolicy === "manual") {
-      return `${header}\nUser-enabled Green mode is active. Follow the user's current requests without inventing adjacent work.${allowedPaths}\nThis mode remains Green until the user changes the light. Do not emit a completion release marker merely because one task finishes.\n${protectedBoundary}`;
+      return `${header}\nUser-enabled Green mode is active. You have full execution authority for the user's requests.${allowedPaths}\nThis mode remains Green until the user changes the light. Do not emit a completion release marker merely because one task finishes.`;
     }
-    return `${header}\nAuthorized scope: ${state.scope}\nScope enforcement: ${state.scopeEnforcement}.${allowedPaths} Do not widen scope. When complete or blocked, end with LIGHT_RELEASE: complete or LIGHT_RELEASE: blocked.\n${protectedBoundary}`;
+    return `${header}\nAuthorized scope: ${state.scope}\nYou have full execution authority inside this scope. Scope enforcement: ${state.scopeEnforcement}.${allowedPaths} Do not widen scope. When complete or blocked, end with LIGHT_RELEASE: complete or LIGHT_RELEASE: blocked.`;
   }
   return redContext;
 }

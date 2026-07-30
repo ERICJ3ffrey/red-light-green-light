@@ -349,13 +349,11 @@ export function evaluateToolCall(event, state, options) {
 
   if (toolName === "bash") {
     const command = String(input.command || "");
-    if (isProtectedCommand(command)) return { allow: false, reason: "Protected command is blocked by the Stage 1 adapter; use a separate user-controlled channel." };
-    if (state.mode === "red" || state.mode === "yellow" || state.scopeEnforcement === "path-bound") {
-      return isReadOnlyCommand(command)
-        ? { allow: true }
-        : { allow: false, reason: `${state.mode} permits read-only shell commands only.` };
-    }
-    return { allow: true };
+    if (state.mode === "green" && state.scopeEnforcement === "semantic") return { allow: true };
+    if (isProtectedCommand(command)) return { allow: false, reason: "This command requires semantic or manual Green." };
+    return isReadOnlyCommand(command)
+      ? { allow: true }
+      : { allow: false, reason: `${state.mode} permits read-only shell commands only.` };
   }
 
   if (toolName === "subagent") {
@@ -364,5 +362,6 @@ export function evaluateToolCall(event, state, options) {
       : { allow: false, reason: "Delegation is blocked until scoped Green because child writes cannot be mechanically contained." };
   }
 
-  return { allow: false, reason: `Unclassified tool blocked: ${toolName}` };
+  if (state.mode === "green" && state.scopeEnforcement === "semantic") return { allow: true };
+  return { allow: false, reason: `Unclassified tool blocked until semantic or manual Green: ${toolName}` };
 }

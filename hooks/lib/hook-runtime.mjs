@@ -113,9 +113,8 @@ export function normalizeToolCall(payload) {
     return invalidNormalized("Malformed tool payload.");
   }
 
-  const toolName = TOOL_NAMES.get(payload.tool_name.toLowerCase());
-  if (!toolName) return invalidNormalized(`Unknown tool blocked: ${payload.tool_name}`);
-
+  const normalizedName = payload.tool_name.toLowerCase();
+  const toolName = TOOL_NAMES.get(normalizedName) || normalizedName;
   const input = { ...payload.tool_input };
   if (Object.hasOwn(input, "file_path")) {
     if (Object.hasOwn(input, "path") && input.path !== input.file_path) {

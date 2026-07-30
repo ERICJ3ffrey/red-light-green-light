@@ -1,6 +1,6 @@
 {
   "name": "red-light-green-light",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "User-controlled Red, Yellow, and scoped Green authority for AI coding agents",
   "type": "module",
   "license": "MIT",
@@ -28,8 +28,6 @@
     ".claude-plugin/",
     ".codex-plugin/",
     ".pi/extensions/",
-    "assets/",
-    "commands/",
     "hooks/",
     "runtime/",
     "skills/"
@@ -42,13 +40,12 @@
       "optional": true
     }
   },
-  "scripts": {
-    "test": "node --test tests/*.test.js",
-    "validate": "node scripts/validate-package.mjs",
-    "acceptance:pi": "node tests/acceptance/pi/run-acceptance.mjs"
-  },
   "pi": {
-    "extensions": ["./.pi/extensions/red-light-green-light.ts"],
-    "skills": ["./skills"]
+    "extensions": [
+      "./.pi/extensions/red-light-green-light.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
   }
 }
