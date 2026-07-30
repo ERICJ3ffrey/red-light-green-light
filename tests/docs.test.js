@@ -16,17 +16,21 @@ test("README presents the exact public name, logo, and Git install paths", () =>
   assert.doesNotMatch(text, /npm (?:install|i) (?:-g )?red-light-green-light/);
 });
 
-test("README states enforcement tiers, hook trust, and protected boundaries", () => {
+test("README stays concise while documenting current Codex behavior and boundaries", () => {
   const text = read("README.md");
   for (const phrase of [
-    "Enforcement matrix",
     "Mechanically guarded",
     "Instruction guarded",
-    "explicitly trust them",
+    "trust the plugin hooks",
+    "does not support plugin-defined `/light` commands",
+    "light status",
+    "light green",
     "not an OS sandbox",
     "separate user-controlled channel",
-    "Laptop smoke test",
-  ]) assert.match(text.toLowerCase(), new RegExp(phrase.toLowerCase()));
+  ]) assert.match(text.toLowerCase(), new RegExp(phrase.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(text, /\/plugins/);
+  assert.doesNotMatch(text, /Try without installing|Laptop smoke test|## Development/);
+  assert.ok(text.split("\n").length <= 120, "README should remain concise");
 });
 
 test("public CI covers Windows and Ubuntu without an install step", () => {
