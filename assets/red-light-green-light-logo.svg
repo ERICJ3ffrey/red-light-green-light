@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1024 1024"
+     width="1024"
+     height="1024"
+     role="img"
+     aria-labelledby="title description">
+  <title id="title">Red Light Green Light</title>
+  <desc id="description">
+    A dark traffic light with a red stop symbol, yellow planning document,
+    and green forward arrow.
+  </desc>
+
+  <defs>
+    <linearGradient id="housing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#383a3f"/>
+      <stop offset="0.5" stop-color="#2e3035"/>
+      <stop offset="1" stop-color="#3a3c41"/>
+    </linearGradient>
+
+    <radialGradient id="redLight" cx="42%" cy="36%" r="70%">
+      <stop offset="0" stop-color="#ff3030"/>
+      <stop offset="1" stop-color="#f0181d"/>
+    </radialGradient>
+
+    <radialGradient id="yellowLight" cx="42%" cy="36%" r="70%">
+      <stop offset="0" stop-color="#ffc647"/>
+      <stop offset="1" stop-color="#ffb51f"/>
+    </radialGradient>
+
+    <radialGradient id="greenLight" cx="42%" cy="36%" r="70%">
+      <stop offset="0" stop-color="#29c55b"/>
+      <stop offset="1" stop-color="#18ad49"/>
+    </radialGradient>
+
+    <filter id="housingShadow" x="-40%" y="-30%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="22"
+                    flood-color="#131417" flood-opacity="0.22"/>
+    </filter>
+
+    <filter id="lightShadow" x="-35%" y="-35%" width="170%" height="170%">
+      <feDropShadow dx="0" dy="7" stdDeviation="9"
+                    flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+
+    <filter id="iconShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3"
+                    flood-color="#000000" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#ffffff"/>
+
+  <rect x="352" y="128" width="320" height="768" rx="76"
+        fill="url(#housing)" filter="url(#housingShadow)"/>
+
+  <g filter="url(#lightShadow)">
+    <circle cx="512" cy="286" r="112" fill="#202226"/>
+    <circle cx="512" cy="286" r="91" fill="url(#redLight)"/>
+  </g>
+  <rect x="454" y="276" width="116" height="20" rx="10" fill="#ffffff"/>
+
+  <g filter="url(#lightShadow)">
+    <circle cx="512" cy="512" r="112" fill="#202226"/>
+    <circle cx="512" cy="512" r="91" fill="url(#yellowLight)"/>
+  </g>
+
+  <g fill="none"
+     stroke="#282b2f"
+     stroke-width="8"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     filter="url(#iconShadow)">
+    <path d="M468 458
+             H532
+             L562 488
+             V562
+             Q562 570 554 570
+             H468
+             Q460 570 460 562
+             V466
+             Q460 458 468 458Z"/>
+    <path d="M532 458 V488 H562"/>
+
+    <path d="M476 502 l8 8 13-15"/>
+    <path d="M510 505 h31"/>
+
+    <path d="M476 526 l8 8 13-15"/>
+    <path d="M510 529 h31"/>
+
+    <path d="M476 550 l8 8 13-15"/>
+    <path d="M510 553 h31"/>
+  </g>
+
+  <g filter="url(#lightShadow)">
+    <circle cx="512" cy="738" r="112" fill="#202226"/>
+    <circle cx="512" cy="738" r="91" fill="url(#greenLight)"/>
+  </g>
+
+  <path d="M458 738 H548
+           M526 707 L557 738 L526 769"
+        fill="none"
+        stroke="#ffffff"
+        stroke-width="20"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

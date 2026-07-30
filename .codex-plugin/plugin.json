@@ -31,6 +31,8 @@
     "defaultPrompt": [
       "Show the current Red Light Green Light authority status."
     ],
-    "brandColor": "#101417"
+    "brandColor": "#101417",
+    "composerIcon": "./assets/red-light-green-light-logo.svg",
+    "logo": "./assets/red-light-green-light-logo.svg"
   }
 }

@@ -1,20 +1,39 @@
+<p align="center">
+  <img src="assets/red-light-green-light-logo.svg" alt="red-light-green-light logo" width="160">
+</p>
+
 # red-light-green-light
 
-AI coding agents start building while you are still thinking. `red-light-green-light` lets you decide when they can research, plan, or act.
+AI coding agents start building while you are still thinking. `red-light-green-light` gives them traffic lights.
 
 Every session starts Red. Only you can change the light.
 
 - **Red:** read, research, discuss, and plan in chat. No changes.
-- **Yellow:** write planning documents. No production changes.
+- **Yellow:** write planning docs. No production changes.
 - **Green:** execute the task. Green means Green.
 
 ## Install
 
-### Pi
+Pick your harness:
 
 ```bash
+# Pi
 pi install git:github.com/ERICJ3ffrey/red-light-green-light
+
+# Claude Code
+claude plugin marketplace add ERICJ3ffrey/red-light-green-light
+claude plugin install red-light-green-light@red-light-green-light
+
+# Codex
+codex plugin marketplace add ERICJ3ffrey/red-light-green-light --ref master
+codex plugin add red-light-green-light@red-light-green-light
 ```
+
+For Claude Code or Codex, restart the app and enable/trust the hooks when prompted.
+
+## Use
+
+Pi supports `/light ...`:
 
 ```text
 /light status
@@ -24,18 +43,7 @@ pi install git:github.com/ERICJ3ffrey/red-light-green-light
 /light green for implement the approved plan
 ```
 
-Pi shows the active light in its footer.
-
-### Claude Code
-
-```bash
-claude plugin marketplace add ERICJ3ffrey/red-light-green-light
-claude plugin install red-light-green-light@red-light-green-light
-```
-
-Restart Claude Code and enable the hooks in `/hooks`.
-
-Claude namespaces plugin slash commands, so use the plain controls instead:
+Claude Code and Codex use plain text controls:
 
 ```text
 light status
@@ -45,38 +53,17 @@ light green
 light green for implement the approved plan
 ```
 
-### Codex
+`light green` stays Green until you change it. `light green for ...` is scoped to that task.
 
-```bash
-codex plugin marketplace add ERICJ3ffrey/red-light-green-light --ref master
-codex plugin add red-light-green-light@red-light-green-light
-```
+## What it enforces
 
-Restart Codex and trust the hooks in `/hooks`.
+- New sessions start Red.
+- Red blocks edits and mutating commands.
+- Yellow allows planning docs only.
+- Green allows execution, including Git, installs, deploys, sends, and destructive commands if the user asked for them.
+- Path-bound Green can mechanically restrict file writes to allowed paths.
 
-```text
-light status
-light red
-light yellow docs/plans
-light green
-light green for implement the approved plan
-```
-
-Codex does not support plugin-defined `/light` commands or custom footer items. Use `light status` to check the active light. Disable the plugin through `/plugins`.
-
-## Green means Green
-
-Semantic or manual Green allows the tools needed for the user's request, including Git operations, dependency changes, deployments, publishing, sends, and destructive commands. Scoped Green stays inside its named scope. Path-bound Green stays inside its file allowlist.
-
-The host may still show its own confirmation prompt. This package does not bypass host permissions or the operating system.
-
-## Enforcement
-
-- Pi, Claude Code, and Codex start Red through native adapters.
-- Red and Yellow are mechanically guarded where the host exposes tool hooks.
-- Semantic scope is instruction guarded. Path-bound file writes are mechanically guarded.
-- Protected and unclassified tools are **Allowed in Green** and blocked in Red and Yellow.
-- This is a tool-call authorization layer, not an OS sandbox. See [SECURITY.md](SECURITY.md).
+This is a tool-call authorization layer, not an OS sandbox. Host confirmation prompts and operating-system permissions still apply.
 
 ## License
 
