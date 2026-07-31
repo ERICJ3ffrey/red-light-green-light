@@ -24,10 +24,10 @@ Red permissions plus planning artifacts under approved planning paths. Specs, pl
 
 Green means execution authority. It has two user-selected forms:
 
-- **Scoped Green:** perform any action needed inside the user-named scope, including commands, dependency changes, Git operations, deployments, publishing, sends, and other external side effects. Do not perform adjacent work or expand the scope.
-- **Manual Green:** exact `light green` enables full execution authority for successive user-directed tasks until the user changes the light. Do not invent adjacent work.
+- **Manual Green:** clear user phrasing such as `light green`, `green light`, `greenlit`, or `let it rip` enables Green for successive user-directed tasks until the user changes the light. Do not invent adjacent work.
+- **Scoped Green:** if the user names a scope, perform any action needed inside that scope, including commands, dependency changes, Git operations, deployments, publishing, sends, and other external side effects. Do not perform adjacent work or expand the scope.
 
-Green removes this skill's restrictions. The host may still require its own confirmation for sensitive actions; this skill does not bypass host or operating-system controls.
+Green removes this skill's restrictions for the user's requested work. The host may still require its own confirmation for sensitive actions; this skill does not bypass host or operating-system controls.
 
 Scoped Green persists while its scope is incomplete and unblocked. When a scoped Green task completes or cannot continue, end the response with exactly one marker:
 
@@ -53,15 +53,15 @@ A prose claim such as “I am back at Red” does not release Green. The final n
 
 - `/light red`, exact `red light`, or exact `light red` sets Red immediately.
 - `/light yellow [planning-path]`, `yellow light [planning-path]`, or `light yellow [planning-path]` sets Yellow.
-- `/light green <scope>` sets scoped semantic Green.
+- `/light green [scope]` sets Green immediately; without a scope it sets manual Green.
 - `/light green <scope> --paths path-one,path-two` sets scoped path-bound Green.
-- Exact `green light for <scope>` or `light green for <scope>` sets scoped semantic Green.
-- Exact `light green` sets manual Green until the user selects another light.
+- `green light`, `light green`, `greenlit`, `greenlight this`, `let it rip`, or `scope is to <scope>` set Green immediately.
+- `green light for <scope>`, `light green for <scope>`, or `go ahead and <scope>` set scoped semantic Green.
 - `/light status` or exact `light status` reports the active mode and scope information.
 - New, resumed, forked, or reloaded sessions start Red.
 - Compaction never increases authority.
 
-A user message containing only a transition changes authority only. Acknowledge the new mode without tools or implementation, then wait for a separate user task. Manual Green remains active across completed tasks until the user selects Red or Yellow. Light controls are accepted from every current light.
+A user message containing only a transition changes authority only; acknowledge it and wait for a separate user task. If the transition includes task text on following lines, continue with that task under the new authority. Manual Green remains active across completed tasks until the user selects Red or Yellow. Light controls are accepted from every current light.
 
 The agent may recommend a transition. It cannot grant Yellow, grant Green, or redirect Green. Subagents inherit the parent's light and scope and cannot increase them.
 
@@ -77,7 +77,7 @@ Stop and return to Red when reasoning includes:
 - “This edit is tiny.”
 - “While I am here.”
 - “The deadline makes confirmation impractical.”
-- “The user probably meant Green.”
+- “The user probably meant Green” when the user did not use a clear Green cue.
 - “The child agent can decide.”
 
 None of these grants authority.

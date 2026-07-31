@@ -113,9 +113,12 @@ export function normalizeToolCall(payload) {
     return invalidNormalized("Malformed tool payload.");
   }
 
-  const normalizedName = payload.tool_name.toLowerCase();
-  const toolName = TOOL_NAMES.get(normalizedName) || normalizedName;
+  const rawToolName = payload.tool_name.toLowerCase();
+  const toolName = TOOL_NAMES.get(rawToolName);
+  const unclassified = !toolName;
+
   const input = { ...payload.tool_input };
+  if (unclassified) return { ok: true, toolName: rawToolName, input, unclassified: true };
   if (Object.hasOwn(input, "file_path")) {
     if (Object.hasOwn(input, "path") && input.path !== input.file_path) {
       return invalidNormalized("Tool payload contains conflicting path fields.");

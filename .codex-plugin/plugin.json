@@ -1,7 +1,7 @@
 {
   "name": "red-light-green-light",
   "version": "0.3.0",
-  "description": "User-controlled Red, Yellow, and scoped Green authority for AI coding agents",
+  "description": "User-controlled Red, Yellow, and Green authority for AI coding agents",
   "author": {
     "name": "ERICJ3ffrey",
     "url": "https://github.com/ERICJ3ffrey"
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "red-light-green-light",
     "shortDescription": "User-controlled authority for AI coding agents",
-    "longDescription": "Control when AI coding agents may research, plan, or implement with Red, Yellow, and scoped Green authority.",
+    "longDescription": "Control when AI coding agents may research, plan, or implement with Red, Yellow, and user-granted Green authority.",
     "developerName": "ERICJ3ffrey",
     "category": "Productivity",
     "capabilities": [

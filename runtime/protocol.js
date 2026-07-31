@@ -5,6 +5,10 @@ export function createRedState(resetReason = "startup", now = new Date().toISOSt
   return { mode: "red", resetReason, grantedAt: now };
 }
 
+function manualGreenTransition() {
+  return { mode: "green", scope: "user-enabled Green mode", releasePolicy: "manual" };
+}
+
 export function parseLightArgs(raw) {
   const text = String(raw || "").trim();
   const [modeRaw = "", ...rest] = text.split(/\s+/);
@@ -12,20 +16,20 @@ export function parseLightArgs(raw) {
   const value = rest.join(" ").trim();
 
   if (!MODES.has(mode) && mode !== "status") {
-    return { ok: false, error: "Use /light red, /light yellow [planning-path], /light green <scope>, or /light status." };
+    return { ok: false, error: "Use /light red, /light yellow [planning-path], /light green [scope], or /light status." };
   }
   if (mode === "status") return { ok: true, status: true };
-  if (mode === "green" && !value) return { ok: false, error: "Green requires a scope." };
   if (mode === "red") return { ok: true, transition: { mode: "red" } };
   if (mode === "yellow") {
     return { ok: true, transition: value ? { mode: "yellow", planningPath: value } : { mode: "yellow" } };
   }
+  if (!value) return { ok: true, transition: manualGreenTransition() };
   const marker = value.match(/(^|\s)--paths(?=\s|$)/);
   if (!marker) return { ok: true, transition: { mode: "green", scope: value } };
   const markerIndex = marker.index;
   const scope = value.slice(0, markerIndex).trim();
   const allowedPaths = value.slice(markerIndex + marker[0].length).split(",").map((item) => item.trim()).filter(Boolean);
-  if (!scope) return { ok: false, error: "Green requires a scope." };
+  if (!scope) return { ok: false, error: "Path-bound Green requires a scope." };
   if (!allowedPaths.length) return { ok: false, error: "--paths requires at least one path." };
   return { ok: true, transition: { mode: "green", scope, allowedPaths } };
 }
@@ -45,16 +49,23 @@ export function parseTransitionMessage(raw) {
     const mode = match[1].toLowerCase();
     let value = match[2]?.trim() || "";
     if (mode === "green" && /^for\s+/i.test(value)) value = value.replace(/^for\s+/i, "");
-    parsed = mode === "green" && !value
-      ? { ok: true, transition: { mode: "green", scope: "user-enabled Green mode", releasePolicy: "manual" } }
-      : parseLightArgs(`${mode}${value ? ` ${value}` : ""}`);
+    parsed = parseLightArgs(`${mode}${value ? ` ${value}` : ""}`);
   } else if (/^red light$/i.test(line)) {
     parsed = { ok: true, transition: { mode: "red" } };
   } else if (/^yellow light(?:\s+(.+))?$/i.test(line)) {
     const match = line.match(/^yellow light(?:\s+(.+))?$/i);
     parsed = { ok: true, transition: match?.[1] ? { mode: "yellow", planningPath: match[1].trim() } : { mode: "yellow" } };
-  } else if (/^green light(?:\s+for)?\s+(.+)$/i.test(line)) {
-    const match = line.match(/^green light(?:\s+for)?\s+(.+)$/i);
+  } else if (/^green light(?:\s+for)?(?:\s+(.+))?$/i.test(line)) {
+    const match = line.match(/^green light(?:\s+for)?(?:\s+(.+))?$/i);
+    const scope = match?.[1]?.trim();
+    parsed = { ok: true, transition: scope ? { mode: "green", scope } : manualGreenTransition() };
+  } else if (/^(?:the\s+)?scope\s+is\s+to\s+(.+)$/i.test(line)) {
+    const match = line.match(/^(?:the\s+)?scope\s+is\s+to\s+(.+)$/i);
+    parsed = { ok: true, transition: { mode: "green", scope: match[1].trim() } };
+  } else if (/^(?:you(?:'re| are)\s+greenlit|greenlit|greenlight(?:\s+this)?|let it rip)[.!]?$/i.test(line)) {
+    parsed = { ok: true, transition: manualGreenTransition() };
+  } else if (/^go ahead(?:\s+and)?\s+(.+)$/i.test(line)) {
+    const match = line.match(/^go ahead(?:\s+and)?\s+(.+)$/i);
     parsed = { ok: true, transition: { mode: "green", scope: match[1].trim() } };
   } else {
     return undefined;
@@ -79,14 +90,15 @@ export function applyUserTransition(_current, transition, options = {}) {
     };
   }
   if (transition.mode !== "green") throw new Error(`Unknown light mode: ${transition.mode}`);
-  if (!transition.scope?.trim()) throw new Error("Green requires a scope.");
+  const scope = transition.scope?.trim() || "user-enabled Green mode";
+  const releasePolicy = transition.releasePolicy === "manual" || !transition.scope?.trim() ? "manual" : undefined;
   const allowedPaths = options.allowedPaths?.length ? options.allowedPaths : transition.allowedPaths;
   return {
     mode: "green",
-    scope: transition.scope.trim(),
+    scope,
     scopeEnforcement: allowedPaths?.length ? "path-bound" : "semantic",
     allowedPaths: allowedPaths?.length ? [...allowedPaths] : undefined,
-    releasePolicy: transition.releasePolicy === "manual" ? "manual" : undefined,
+    releasePolicy,
     grantedAt: now,
     grantedByUserEntry: options.userEntry,
   };
@@ -110,9 +122,9 @@ export function renderAuthorityContext(state) {
       ? `\nAllowed paths: ${state.allowedPaths?.join(", ") || "(none)"}`
       : "";
     if (state.releasePolicy === "manual") {
-      return `${header}\nUser-enabled Green mode is active. You have full execution authority for the user's requests.${allowedPaths}\nThis mode remains Green until the user changes the light. Do not emit a completion release marker merely because one task finishes.`;
+      return `${header}\nUser-enabled Green mode is active. User-granted Green permits the requested work, including commands, tools, and external side effects needed for the user's current requests.${allowedPaths}\nThis mode remains Green until the user changes the light. Do not emit a completion release marker merely because one task finishes.`;
     }
-    return `${header}\nAuthorized scope: ${state.scope}\nYou have full execution authority inside this scope. Scope enforcement: ${state.scopeEnforcement}.${allowedPaths} Do not widen scope. When complete or blocked, end with LIGHT_RELEASE: complete or LIGHT_RELEASE: blocked.`;
+    return `${header}\nAuthorized scope: ${state.scope}\nScope enforcement: ${state.scopeEnforcement}.${allowedPaths} User-granted Green permits the requested work, including commands, tools, and external side effects within that scope. Do not widen scope. When complete or blocked, end with LIGHT_RELEASE: complete or LIGHT_RELEASE: blocked.`;
   }
   return redContext;
 }

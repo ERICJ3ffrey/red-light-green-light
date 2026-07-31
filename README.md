@@ -41,6 +41,7 @@ Pi supports `/light ...`:
 /light yellow docs/plans
 /light green
 /light green for implement the approved plan
+/light green implement the approved plan --paths src/auth.js
 ```
 
 Claude Code and Codex use plain text controls:
@@ -50,10 +51,15 @@ light status
 light red
 light yellow docs/plans
 light green
-light green for implement the approved plan
+green light
+greenlit
+greenlight this
+let it rip
+scope is to implement the approved plan
+go ahead and implement the approved plan
 ```
 
-`light green` stays Green until you change it. `light green for ...` is scoped to that task.
+`light green` and other manual Green phrases stay Green until you change the light. Scoped Green releases when its named task completes or blocks.
 
 ## What it enforces
 
@@ -61,6 +67,7 @@ light green for implement the approved plan
 - Red blocks edits and mutating commands.
 - Yellow allows planning docs only.
 - Green allows execution, including Git, installs, deploys, sends, and destructive commands if the user asked for them.
+- Semantic/manual Green allows protected commands and unclassified tools.
 - Path-bound Green can mechanically restrict file writes to allowed paths.
 
 This is a tool-call authorization layer, not an OS sandbox. Host confirmation prompts and operating-system permissions still apply.
